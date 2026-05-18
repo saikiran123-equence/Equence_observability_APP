@@ -1,0 +1,24 @@
+[
+  {
+    "id": "1129a4ca-a874-4940-a629-6f1113f4e61f",
+    "username": "ITinfra",
+    "passwordHash": "$2b$10$KnoMn07tMME3NNv1c23RaOMx7iCw9MdxYoL6D8CxpuYbuBAaAD/Tu",
+    "group": "infra",
+    "assignedServers": [],
+    "enabled": true
+  },
+  {
+    "id": "62d101fa-bc3b-44cf-aa92-90ca6f7f92ba",
+    "username": "nadish",
+    "passwordHash": "$2b$10$C2OgUpNHJWYaekH6JCI8jeBs48B8CsmLqMMlhxbXPurFeHS1TwA2K",
+    "group": "support",
+    "assignedServers": [
+      "METIS-111",
+      "METIS-112",
+      "METIS-113",
+      "METIS-114",
+      "METIS-115"
+    ],
+    "enabled": true
+  }
+]

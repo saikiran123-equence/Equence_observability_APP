@@ -1,14 +1,26 @@
-# Secrets vault — NEVER commit
+# Environment files
 .env
+
+# Node modules
+node_modules/
 
 # Logs
 logs/
 *.log
-security_audit.log
 
-# Runtime data
-users.json
+# Cache
+.cache/
+.upm/
+.agents/
 
-# Node
-node_modules/
-npm-debug.log*
+# Temp files
+tmp/
+*.zip
+
+# Build folders
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,8 +1,0 @@
-uploads = []
-generated = []
-
-[[outputs]]
-id = "VE-UbOfCSmKajqcdSnZwl"
-uri = "file://equence-infra-monitor.zip"
-type = "unspecified"
-title = "Equence Infra Monitor — Full Project"
