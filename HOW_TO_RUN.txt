@@ -1,0 +1,65 @@
+========================================
+  Equence Infra Monitor — Quick Start
+========================================
+
+REQUIREMENT
+-----------
+Node.js 18 or newer must be installed.
+Download free from: https://nodejs.org  (choose the LTS version)
+
+
+WINDOWS
+-------
+1. Extract this zip anywhere
+2. Double-click  start.bat
+3. Enter your SSH password when prompted
+4. Open http://localhost:5000 in your browser
+
+
+LINUX / MAC
+-----------
+1. Extract this zip
+2. Open a terminal in the folder
+3. Run:   chmod +x start.sh && ./start.sh
+4. Enter your SSH password when prompted
+5. Open http://localhost:5000 in your browser
+
+
+FIRST LOGIN
+-----------
+Username:  ITinfra
+Password:  (set your own password on first login — you'll be prompted)
+
+
+ADD / EDIT SERVERS
+------------------
+Edit the file:  backend/data/servers.json
+
+Each server entry looks like:
+  {
+    "id":      "SERVER-NAME",
+    "group":   "GROUP-NAME",
+    "host":    "192.168.1.10",
+    "user":    "root",
+    "port":    22,
+    "os":      "Ubuntu 22.04",
+    "enabled": true
+  }
+
+Save the file and restart the app — servers appear instantly in the sidebar.
+
+
+CHANGE SSH PASSWORD LATER
+--------------------------
+Edit the  .env  file (created on first run):
+  SSH_PASSWORD=your_new_password
+
+
+CHANGE PORT
+-----------
+Edit the  .env  file:
+  PORT=8080
+Then open  http://localhost:8080
+
+
+========================================

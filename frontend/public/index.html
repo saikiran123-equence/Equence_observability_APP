@@ -1,0 +1,2284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Equence Infra Monitor</title>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-search@0.13.0/lib/xterm-addon-search.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-webgl@0.16.0/lib/xterm-addon-webgl.js"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.462.0/dist/umd/lucide.min.js"></script>
+
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    #metricsRibbon.show { display: flex !important; animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  </style>
+
+</head>
+<body>
+
+  <!-- Premium Visual Layers -->
+  <canvas id="aurora-canvas"></canvas>
+  <canvas id="particles-canvas"></canvas>
+  <div id="cursor-glow"></div>
+  <div id="toast-container"></div>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="login-card">
+      <div class="login-card-border"></div>
+      <div class="login-brand-area">
+        <div class="login-orb-wrap">
+          <div class="login-orb-bg"></div>
+          <div class="login-orb">
+            <i data-lucide="shield" width="24" height="24"></i>
+          </div>
+        </div>
+        <div class="login-title">Equence Infra</div>
+        <div class="login-sub">Infrastructure Security Portal</div>
+      </div>
+      <div class="input-group">
+        <label>Username</label>
+        <input type="text" id="loginUsername" placeholder="Enter your username" autocomplete="username">
+      </div>
+      <div class="input-group">
+        <label>Password</label>
+        <input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key === 'Enter') doLogin()">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">Sign In</button>
+      <div class="error-msg" id="loginError" style="margin-top: 14px; text-align: center;"></div>
+    </div>
+  </div>
+
+  <!-- Invite Accept Modal -->
+  <div class="modal-overlay" id="inviteModal">
+    <div class="modal-content">
+      <h2 class="modal-title">Accept Invitation</h2>
+      <p style="text-align:center; color:var(--text-dim); margin-bottom: 24px; font-weight: 500;">Welcome, <span id="inviteUsername" style="color:var(--accent); font-weight:700;"></span>!</p>
+      <div class="input-group">
+        <label>Set New Password</label>
+        <input type="password" id="invitePassword" placeholder="Minimum 6 characters">
+      </div>
+      <button class="btn-primary" onclick="acceptInvite()">Create Account</button>
+      <div class="error-msg" id="inviteError"></div>
+    </div>
+  </div>
+
+  <!-- Admin Panel Modal -->
+  <div class="modal-overlay" id="adminModal">
+    <div class="modal-content large">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+        <h2 class="modal-title" style="margin:0;">User Management</h2>
+        <button class="btn-secondary" onclick="document.getElementById('adminModal').style.display='none'">Close</button>
+      </div>
+      
+      <div style="display:flex; gap: 20px; margin-bottom: 24px;">
+        <div style="flex: 1; background: var(--bg-input); padding: 24px; border-radius: 16px; border: 1px solid var(--border);">
+          <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Create User</h3>
+          <div class="input-group">
+            <label>Username</label>
+            <input type="text" id="newUsername" placeholder="e.g. jdoe">
+          </div>
+          <div class="input-group">
+            <label>Group</label>
+            <select id="newGroup">
+              <option value="infra">infra (Admin)</option>
+              <option value="system engineer">system engineer</option>
+              <option value="support">support</option>
+              <option value="testing">testing</option>
+              <option value="developers">developers</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>Assigned Servers (Comma-separated IDs)</label>
+            <input type="text" id="newServers" placeholder="e.g. BLUTO-7, VESTA-241">
+          </div>
+          <button class="btn-secondary" style="width:100%" onclick="createUser()">Generate Invite</button>
+          <div class="success-msg" id="adminSuccess"></div>
+          <div class="error-msg" id="adminError"></div>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom: 12px; font-size: 1.1rem;">Existing Users</h3>
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Group</th>
+            <th>Status</th>
+            <th>Servers</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody"></tbody>
+      </table>
+
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
+        <h3 style="margin-bottom: 12px; font-size: 1.1rem;">System Reports</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div style="background: var(--bg-input); padding: 20px; border-radius: 12px; border: 1px solid var(--border);">
+            <h4 style="margin-bottom: 8px;">Fleet Activity Audit</h4>
+            <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 16px;">Generate a structured archive of all user activity across your infrastructure.</p>
+            <button class="btn-secondary" style="width: 100%;" onclick="document.getElementById('auditModal').style.display='flex'">Open Audit Tool</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fleet Audit Modal -->
+  <div class="modal-overlay" id="auditModal">
+    <div class="modal-content" style="max-width: 500px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+        <h2 class="modal-title" style="margin:0;"><i data-lucide="shield-check" width="20" height="20" style="margin-right: 8px;"></i>Structured Fleet Audit</h2>
+        <button class="btn-secondary" onclick="document.getElementById('auditModal').style.display='none'">Close</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 24px;">Download a structured ZIP containing activity logs for all users on selected servers.</p>
+      
+      <div style="display: flex; gap: 12px; width: 100%;">
+        <div class="input-group" style="flex: 1;">
+          <label>Start Date</label>
+          <input type="date" id="auditStartDate" class="filter-input" style="width: 100%;">
+        </div>
+        <div class="input-group" style="flex: 1;">
+          <label>End Date</label>
+          <input type="date" id="auditEndDate" class="filter-input" style="width: 100%;">
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>Filter Servers (Optional)</label>
+        <input type="text" id="auditServers" class="filter-input" placeholder="e.g. BLUTO-11, ERIS-228" style="width: 100%;">
+      </div>
+
+      <button class="btn-primary" id="downloadAuditBtn" onclick="downloadFleetAudit()" style="margin-top: 24px; background: linear-gradient(135deg, #E95420 0%, #FF7A4D 100%); display: flex; align-items: center; justify-content: center; gap: 10px;">
+          GENERATE & DOWNLOAD ZIP
+      </button>
+      <div id="auditStatus" style="margin-top: 16px; font-size: 0.85rem; text-align: center; color: var(--text-dim); font-weight: 600;"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="logBrowserModal" style="display: none;">
+    <div class="modal-content" style="max-width: 600px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+        <h2 class="modal-title" style="margin:0;"><i data-lucide="folder-search" width="20" height="20" style="margin-right: 8px;"></i>Browse Server Logs</h2>
+        <button class="btn-secondary" onclick="document.getElementById('logBrowserModal').style.display='none'">Close</button>
+      </div>
+      <input type="text" id="logSearchInput" class="filter-input" placeholder="Search by name, extension, or path..." style="width: 100%; margin-bottom: 20px; padding: 12px 18px; font-size: 1rem; background: var(--bg-input); border: 1.5px solid var(--border); color: var(--text-main);">
+      <div id="logBrowserList" style="background: var(--bg-input); border-radius: 16px; border: 1.5px solid var(--border); max-height: 400px; overflow-y: auto;">
+        <!-- Log items injected here -->
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="downloadModal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px;">
+        <h2 class="modal-title" style="margin:0;"><i data-lucide="download-cloud" width="20" height="20" style="margin-right: 8px;"></i>Download Log Archive</h2>
+        <button class="btn-secondary" onclick="document.getElementById('downloadModal').style.display='none'">Close</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-dim); margin-bottom: 24px;">Find and download specific log files. Enter a directory to search by date, or a direct file path to fetch it immediately.</p>
+      
+      <div class="input-group">
+        <label>Select Server</label>
+        <select id="downloadServerSelect" class="filter-input" style="width: 100%; background-color: var(--bg-input); color: var(--text-main); border: 1.5px solid var(--border);"></select>
+      </div>
+      
+      <div class="input-group">
+        <label>Search Path</label>
+        <div style="display: grid; grid-template-columns: 1fr 140px; gap: 10px;">
+          <input type="text" id="downloadPath" class="filter-input" value="/var/log" placeholder="/var/log or /opt/logs" style="background-color: var(--bg-input); color: var(--text-main); border: 1.5px solid var(--border);">
+          <select class="filter-input" onchange="if(this.value){document.getElementById('downloadPath').value=this.value; this.selectedIndex=0;}" style="background-color: var(--bg-input); color: var(--text-main); border: 1.5px solid var(--border);">
+            <option value="" disabled selected>Presets</option>
+            <option value="/var/log">System Logs</option>
+            <option value="/opt">Apps (/opt)</option>
+            <option value="/var/log/nginx">Nginx</option>
+            <option value="/var/log/apache2">Apache</option>
+            <option value="/var/log/mysql">MySQL</option>
+            <option value="/opt/tomcat/logs">Tomcat</option>
+            <option value="/">Root (/)</option>
+          </select>
+        </div>
+      </div>
+      
+      <div style="display: flex; gap: 12px; width: 100%;">
+        <div class="input-group" style="flex: 1;">
+          <label>Start Date</label>
+          <input type="date" id="downloadStartDate" class="filter-input" style="width: 100%; background-color: var(--bg-input); color: var(--text-main); border: 1.5px solid var(--border);">
+        </div>
+        <div class="input-group" style="flex: 1;">
+          <label>End Date</label>
+          <input type="date" id="downloadEndDate" class="filter-input" style="width: 100%; background-color: var(--bg-input); color: var(--text-main); border: 1.5px solid var(--border);">
+        </div>
+      </div>
+      
+      <div id="downloadFileListContainer" style="display: none; margin-top: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Select Files to Download</label>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-secondary" style="padding: 4px 10px; font-size: 0.7rem;" onclick="toggleAllLogs(true)">Select All</button>
+            <button class="btn-secondary" style="padding: 4px 10px; font-size: 0.7rem;" onclick="toggleAllLogs(false)">None</button>
+          </div>
+        </div>
+        <div id="downloadFileList" style="background: var(--bg-input); border-radius: 12px; border: 1.5px solid var(--border); max-height: 200px; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+      
+      <button class="btn-primary" id="searchLogsBtn" onclick="searchLogsForDownload()" style="margin-top: 24px;">Search Logs</button>
+      <button class="btn-primary" id="downloadBtn" onclick="doDownload()" style="margin-top: 24px; display: none; background: linear-gradient(135deg, #01B574 0%, #01E08F 100%);">Download Selected (0)</button>
+      <div id="downloadStatus" style="margin-top: 16px; font-size: 0.85rem; text-align: center; font-weight: 600; color: var(--text-main);"></div>
+    </div>
+  </div>
+
+  <div id="app-container">
+    <div class="app-shell">
+    <nav class="nav-rail" aria-label="Workspace">
+      <button type="button" class="nav-rail-btn active" id="nrLogs" title="Log stream" onclick="setExplorerView('list')"><i data-lucide="file-text" width="18" height="18"></i></button>
+      <button type="button" class="nav-rail-btn" title="Servers" onclick="document.querySelector('.sidebar').scrollIntoView({behavior:'smooth'})"><i data-lucide="layers" width="18" height="18"></i></button>
+      <button type="button" class="nav-rail-btn" id="nrTimeseries" title="Metrics &amp; series" onclick="setExplorerView('timeseries')"><i data-lucide="activity" width="18" height="18"></i></button>
+      <div class="nav-rail-spacer"></div>
+      <button type="button" class="nav-rail-btn" title="Download archives" onclick="openDownloadModal()"><i data-lucide="download-cloud" width="18" height="18"></i></button>
+      <button type="button" class="nav-rail-btn" id="nrAdminRail" style="display:none" title="Admin" onclick="openAdminPanel()"><i data-lucide="users" width="18" height="18"></i></button>
+    </nav>
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sb-brand">
+          <div class="sb-icon">
+            <i data-lucide="activity" width="16" height="16"></i>
+          </div>
+          <div class="sb-text">
+            <span class="sb-name">Equence</span>
+            <span class="sb-sub">Infra Monitor</span>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-search">
+        <div class="sidebar-search-wrap">
+          <i data-lucide="search"></i>
+          <input type="text" id="serverSearch" placeholder="Search servers…" autocomplete="off">
+        </div>
+      </div>
+      <div class="server-list" id="serverList"></div>
+      <div class="facet-section">
+        <div class="facet-section-title">Stream</div>
+        <label class="facet-row"><input type="checkbox" id="facetTableLive" checked> <span>Mirror to log table</span></label>
+        <label class="facet-row"><input type="checkbox" id="facetVolumeChart" checked> <span>Volume chart</span></label>
+      </div>
+      <div class="facet-section" id="facetHostsSection">
+        <div class="facet-section-title">Fleet</div>
+        <div id="facetHostsList" class="facet-hosts-inner"></div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-btn" onclick="openDownloadModal()">
+          <div class="sidebar-footer-icon">
+            <i data-lucide="download-cloud" width="14" height="14"></i>
+          </div>
+          <span class="sidebar-footer-label">Download Logs</span>
+        </div>
+      </div>
+    </aside>
+
+      <main class="main-area">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="current-server-info" id="topbarInfo" style="display: none;">
+            <div class="server-icon-glow">
+              <i data-lucide="server" width="16" height="16"></i>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+              <div class="current-server-title" id="serverTitle">--</div>
+              <div class="current-server-subtitle" id="serverIp">--</div>
+            </div>
+          </div>
+          <div class="current-server-info" id="topbarEmpty">
+            <div class="server-icon-glow" style="opacity: 0.5;"><i data-lucide="layout-grid" width="16" height="16"></i></div>
+            <span class="current-server-title" style="color: var(--text-dim); font-weight: 500;">Select a server</span>
+          </div>
+          <span class="greeting-inline" id="userInfo">—</span>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0; flex-wrap: wrap;">
+          <button class="btn-glass" id="adminBtn" style="display:none;" onclick="openAdminPanel()" title="User management">
+            <i data-lucide="users" width="16" height="16"></i><span class="btn-text">Admin</span>
+          </button>
+          <button class="btn-glass" onclick="openFind()" title="Find in terminal">
+            <i data-lucide="search" width="16" height="16"></i><span class="btn-text">Find</span>
+          </button>
+          <button class="btn-glass" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">
+            <span id="themeIconWrap"><i data-lucide="sun" width="16" height="16"></i></span><span class="btn-text">Theme</span>
+          </button>
+          <button class="btn-glass" onclick="logout()">
+            <i data-lucide="log-out" width="16" height="16"></i><span class="btn-text">Logout</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="explorer-shell">
+      <!-- Log stream is primary: terminal first, full height. Optional analytics below. -->
+      <div class="dashboard-content viz-list" id="dashboardContent">
+        <!-- Main Content Area: Terminal -->
+        <div class="terminal-container-card" style="flex: 1; display: flex; flex-direction: column; min-width: 0;">
+          <div class="log-actions-toolbar" id="logActions">
+            <div class="log-toolbar-row paths">
+              <button type="button" class="btn-macro neutral" onclick="openLogBrowser()"><i data-lucide="folder-search" width="14" height="14"></i> Browse</button>
+              <input type="text" id="logPathInput" class="filter-input input-chip" value="/var/log/messages" title="Log file path" autocomplete="off" spellcheck="false">
+              <input type="text" id="liveGrepInput" class="filter-input" placeholder="Filter (grep)…" title="Applied to tail / journalctl" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn-macro primary" onclick="executeMacro('grep')" title="Search in file"><i data-lucide="search" width="14" height="14"></i></button>
+            </div>
+            <div class="log-toolbar-row tools">
+              <button type="button" class="btn-macro primary" onclick="executeMacro('tail')"><i data-lucide="file-text" width="14" height="14"></i> Tail</button>
+              <button type="button" class="btn-macro error" onclick="executeMacro('error')"><i data-lucide="alert-circle" width="14" height="14"></i> Errors</button>
+              <button type="button" class="btn-macro neutral" onclick="executeMacro('clear')"><i data-lucide="eraser" width="14" height="14"></i> Clear</button>
+              <div class="journal-box">
+                <span class="label">journalctl</span>
+                <input type="text" id="journalServiceInput" class="filter-input" list="journalServices" placeholder="nginx.service" autocomplete="off" spellcheck="false">
+                <datalist id="journalServices"></datalist>
+                <button type="button" class="btn-macro primary" onclick="executeMacro('journal')">Follow</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-wrapper" style="position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column;">
+            <div class="search-overlay" id="searchOverlay" style="background: var(--bg-card); border: 1px solid var(--border); box-shadow: var(--shadow-sm); z-index: 100;">
+              <i data-lucide="search" width="16" height="16" style="color: var(--text-dim); margin-right: 8px;"></i>
+              <input type="text" id="searchInput" placeholder="Find in output..." style="color: var(--text-main);">
+              <button id="searchBtnPrev"><i data-lucide="chevron-up" width="14" height="14"></i></button>
+              <button id="searchBtnNext"><i data-lucide="chevron-down" width="14" height="14"></i></button>
+              <button onclick="document.getElementById('searchOverlay').style.display = 'none'; searchAddon.clearDecorations();"><i data-lucide="x" width="16" height="16"></i></button>
+            </div>
+
+            <div class="empty-state" id="emptyState">
+              <div class="empty-state-icon">
+                <i data-lucide="terminal" width="32" height="32"></i>
+              </div>
+              <h2>No server selected</h2>
+              <p>Pick a host from the sidebar to start a session.</p>
+            </div>
+
+            <div class="terminal-window" id="terminalWindow" style="display: none; flex: 1; min-height: 0;">
+              <div class="terminal-header">
+                <div class="traffic-lights">
+                  <span class="tl red"></span>
+                  <span class="tl yellow"></span>
+                  <span class="tl green"></span>
+                </div>
+                <span class="terminal-title">Terminal Output</span>
+                <button id="metricsToggle" onclick="toggleMetrics()">
+                  <i data-lucide="bar-chart-2" width="13" height="13"></i> Stats Panel
+                </button>
+              </div>
+              <div class="terminal-body"><div id="terminal"></div></div>
+              <div class="overlay" id="loadingOverlay">
+                <div class="spinner"></div><div style="margin-top: 16px;">Connecting...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar: Metrics -->
+        <div class="metrics-ribbon" id="metricsRibbon">
+          <div class="metric-card">
+            <div class="metric-label"><i data-lucide="database" width="14" height="14"></i> Memory Usage</div>
+            <div class="metric-grid" id="metricMem">--</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label"><i data-lucide="cpu" width="14" height="14"></i> System Load</div>
+            <div class="metric-grid" id="metricTop">--</div>
+          </div>
+          <div class="metric-card" style="flex: 1; display: flex; flex-direction: column;">
+            <div class="metric-label" style="margin-bottom: 12px;"><i data-lucide="line-chart" width="14" height="14"></i> Live Metrics</div>
+            <div style="flex: 1; position: relative; min-height: 120px;">
+              <canvas id="metricsChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <details class="explorer-extra" id="explorerExtra">
+        <summary class="explorer-extra-summary">Filters, time window &amp; charts (tap to expand)</summary>
+        <div class="explorer-extra-inner">
+      <div class="explorer-toolbar">
+        <div class="explorer-breadcrumb">
+          <div class="explorer-bc-views">
+            <select id="savedViewsSelect" title="Saved views" onchange="applySavedView(this.value)">
+              <option value="">Views</option>
+            </select>
+          </div>
+          <div class="explorer-bc-title"><i data-lucide="braces" width="16" height="16"></i> Analytics</div>
+          <button type="button" class="btn-save-view" onclick="saveExplorerView()">+ Save view</button>
+        </div>
+        <div class="explorer-time-wrap">
+          <span class="time-label">Window</span>
+          <button type="button" class="time-preset" data-ms="300000">5m</button>
+          <button type="button" class="time-preset active" data-ms="900000">15m</button>
+          <button type="button" class="time-preset" data-ms="3600000">1h</button>
+          <button type="button" class="time-preset" data-ms="21600000">6h</button>
+          <button type="button" class="time-preset" data-ms="86400000">24h</button>
+          <span class="explorer-time-range-text" id="explorerTimeLabel"></span>
+        </div>
+      </div>
+      <div class="explorer-search-strip">
+        <div class="explorer-search-row">
+          <span class="explorer-search-label">Search</span>
+          <input type="text" id="explorerQuery" placeholder="Filter lines (text, or key:value). Comma = multiple chips." autocomplete="off" spellcheck="false">
+          <button type="button" class="btn-secondary" style="padding:8px 14px;font-size:0.72rem;border-radius:10px;" onclick="applyExplorerSearch()">Apply</button>
+          <button type="button" class="btn-secondary" style="padding:8px 14px;font-size:0.72rem;border-radius:10px;" onclick="clearExplorerFilters()">Clear</button>
+        </div>
+        <div class="filter-chips" id="filterChips"></div>
+        <div class="explorer-group-row">
+          <span class="seg-label">Group table by</span>
+          <div class="seg-toggle" id="groupByToggle">
+            <button type="button" class="active" data-group="none">None</button>
+            <button type="button" data-group="host">Host</button>
+            <button type="button" data-group="severity">Severity</button>
+          </div>
+        </div>
+      </div>
+      <div class="explorer-viz-row">
+        <span class="explorer-viz-label">View</span>
+        <button type="button" class="viz-tab active" data-viz="list" onclick="setExplorerView('list')">Stream</button>
+        <button type="button" class="viz-tab" data-viz="timeseries" onclick="setExplorerView('timeseries')">Metrics</button>
+        <button type="button" class="viz-tab" data-viz="toplist" onclick="setExplorerView('toplist')">Top tokens</button>
+        <button type="button" class="viz-tab" data-viz="table" onclick="setExplorerView('table')">Table</button>
+        <button type="button" class="viz-tab" data-viz="pie" onclick="setExplorerView('pie')">Severity</button>
+        <button type="button" class="viz-tab" data-viz="treemap" onclick="setExplorerView('treemap')">Prefixes</button>
+      </div>
+      <div class="explorer-chart-panel" id="logVolumePanel">
+        <canvas id="logVolumeChart" height="100"></canvas>
+      </div>
+      <div class="explorer-insights">
+        <div class="explorer-insights-head">
+          <h3>Signals</h3>
+          <span style="font-size:0.65rem;color:var(--t4);">From buffered stream</span>
+        </div>
+        <div class="explorer-insights-scroll" id="insightsScroll"></div>
+      </div>
+      <div class="log-analytics-panel" id="logAnalyticsPanel">
+        <div class="secondary-chart-wrap" id="secondaryChartWrap"><canvas id="secondaryChart"></canvas></div>
+        <div class="log-table-wrap" id="logTableWrap">
+          <table class="log-table" id="explorerLogTable">
+            <thead><tr><th>Time</th><th>Host</th><th>Service</th><th>Content</th></tr></thead>
+            <tbody id="explorerLogTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+        </div>
+      </details>
+
+      </div>
+    </main>
+    </div>
+  </div>
+
+  <script>
+    if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+
+    let currentUserGroup = '';
+    let inviteTokenParam = new URLSearchParams(window.location.search).get('invite');
+
+    /** Log explorer: live buffer, charts, saved views (all client-side from stream) */
+    let explorerView = 'list';
+    let explorerWindowMs = 900000;
+    let explorerChips = [];
+    let explorerFreeText = '';
+    let explorerGroupBy = 'none';
+    const logLineBuffer = [];
+    const LOG_BUF_MAX = 3000;
+    let logVolumeChart = null;
+    let secondaryChart = null;
+    const volumePerSecond = [];
+    let volumeAggCounter = 0;
+    let volumeTickTimer = null;
+    let insightsTimer = null;
+    let currentServerMeta = { id: '', host: '', group: '' };
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function stripAnsi(s) {
+      return String(s).replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '').replace(/\x1b\][0-9;]*\x07/g, '');
+    }
+
+    function updateExplorerTimeLabel() {
+      const el = document.getElementById('explorerTimeLabel');
+      if (!el) return;
+      const end = new Date();
+      const start = new Date(end.getTime() - explorerWindowMs);
+      el.textContent = start.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+        + ' → ' + end.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function initLogVolumeChart() {
+      const ctx = document.getElementById('logVolumeChart');
+      if (!ctx || typeof Chart === 'undefined') return;
+      if (logVolumeChart) { logVolumeChart.destroy(); logVolumeChart = null; }
+      while (volumePerSecond.length < 60) volumePerSecond.unshift(0);
+      while (volumePerSecond.length > 60) volumePerSecond.shift();
+      logVolumeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: volumePerSecond.map((_, i) => ''),
+          datasets: [{
+            label: 'Lines / s',
+            data: volumePerSecond,
+            backgroundColor: 'rgba(239, 68, 68, 0.55)',
+            borderRadius: 2,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { display: false, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function tickVolumeSecond() {
+      volumePerSecond.push(volumeAggCounter);
+      volumeAggCounter = 0;
+      if (volumePerSecond.length > 60) volumePerSecond.shift();
+      const show = document.getElementById('facetVolumeChart');
+      if (show && !show.checked) return;
+      if (!logVolumeChart) return;
+      logVolumeChart.data.datasets[0].data = [...volumePerSecond];
+      logVolumeChart.update('none');
+    }
+
+    function ingestLogStream(raw) {
+      const plain = stripAnsi(raw);
+      const lines = plain.split(/\r?\n/);
+      const live = document.getElementById('facetTableLive');
+      const now = Date.now();
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        volumeAggCounter++;
+        if (live && live.checked) {
+          logLineBuffer.push({
+            t: now,
+            line: line.slice(0, 4000),
+            host: currentServerMeta.id || '—',
+            group: currentServerMeta.group || '—',
+          });
+          if (logLineBuffer.length > LOG_BUF_MAX) logLineBuffer.splice(0, logLineBuffer.length - LOG_BUF_MAX);
+        }
+      }
+      if (explorerView === 'table' || explorerView === 'toplist') {
+        requestAnimationFrame(() => renderExplorerTable(explorerView));
+      }
+    }
+
+    function lineSeverity(line) {
+      const l = line.toLowerCase();
+      if (/\bfatal\b|\bpanic\b|\bemergency\b/i.test(l)) return 'error';
+      if (/\berror\b|\bexception\b|\bfailed\b|\bfailure\b/i.test(l)) return 'error';
+      if (/\bwarn(ing)?\b/i.test(l)) return 'warn';
+      return 'info';
+    }
+
+    function lineMatchesFilters(text) {
+      const lower = text.toLowerCase();
+      if (explorerFreeText && !lower.includes(explorerFreeText.toLowerCase())) return false;
+      for (const c of explorerChips) {
+        const t = c.trim();
+        if (!t) continue;
+        const idx = t.indexOf(':');
+        if (idx === -1) {
+          if (!lower.includes(t.toLowerCase())) return false;
+        } else {
+          const k = t.slice(0, idx).trim().toLowerCase();
+          const v = t.slice(idx + 1).trim().toLowerCase();
+          if (!v) continue;
+          if (k === 'host' && !String(currentServerMeta.id).toLowerCase().includes(v)) return false;
+          if (k === 'group' && !String(currentServerMeta.group).toLowerCase().includes(v)) return false;
+          if (k === 'severity' && lineSeverity(text) !== v) return false;
+          if (k === 'service' && !lower.includes(v)) return false;
+        }
+      }
+      return true;
+    }
+
+    function getWindowedLines() {
+      const cutoff = Date.now() - explorerWindowMs;
+      return logLineBuffer.filter((row) => row.t >= cutoff && lineMatchesFilters(row.line));
+    }
+
+    function renderChips() {
+      const host = document.getElementById('filterChips');
+      if (!host) return;
+      host.innerHTML = '';
+      explorerChips.forEach((c, i) => {
+        const wrap = document.createElement('span');
+        wrap.className = 'filter-chip';
+        wrap.innerHTML = escapeHtml(c) + ' <button type="button" aria-label="Remove">&times;</button>';
+        wrap.querySelector('button').onclick = () => {
+          explorerChips.splice(i, 1);
+          renderChips();
+          refreshExplorerData();
+        };
+        host.appendChild(wrap);
+      });
+    }
+
+    function applyExplorerSearch() {
+      const q = document.getElementById('explorerQuery');
+      if (!q) return;
+      const raw = q.value.trim();
+      if (raw.includes(',')) {
+        raw.split(',').map((s) => s.trim()).filter(Boolean).forEach((p) => {
+          if (!explorerChips.includes(p)) explorerChips.push(p);
+        });
+        explorerFreeText = '';
+      } else {
+        explorerFreeText = raw;
+      }
+      renderChips();
+      refreshExplorerData();
+    }
+
+    function clearExplorerFilters() {
+      explorerChips = [];
+      explorerFreeText = '';
+      const q = document.getElementById('explorerQuery');
+      if (q) q.value = '';
+      renderChips();
+      refreshExplorerData();
+    }
+
+    function refreshExplorerData() {
+      renderExplorerTable(explorerView);
+      rebuildInsights();
+      if (explorerView === 'pie' || explorerView === 'treemap') renderSecondaryViz(explorerView);
+    }
+
+    function renderExplorerTable(mode) {
+      const tbody = document.getElementById('explorerLogTableBody');
+      const theadRow = document.querySelector('#explorerLogTable thead tr');
+      if (!tbody || !theadRow) return;
+      const rows = getWindowedLines();
+      tbody.innerHTML = '';
+      if (mode === 'toplist') {
+        theadRow.innerHTML = '<th>#</th><th>Token</th><th>Hits</th>';
+        const counts = new Map();
+        const stop = new Set(['the', 'a', 'an', 'and', 'or', 'to', 'of', 'in', 'for', 'on', 'at', 'is', 'it', '']);
+        for (const r of rows) {
+          r.line.split(/\s+/).forEach((w) => {
+            const t = w.replace(/[^a-zA-Z0-9_./-]/g, '').toLowerCase();
+            if (t.length < 3 || stop.has(t)) return;
+            counts.set(t, (counts.get(t) || 0) + 1);
+          });
+        }
+        const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 80);
+        top.forEach(([word, n], rank) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = '<td class="ts">' + (rank + 1) + '</td><td class="msg">' + escapeHtml(word) + '</td><td class="host">' + n + '</td>';
+          tbody.appendChild(tr);
+        });
+        return;
+      }
+      theadRow.innerHTML = '<th>Time</th><th>Host</th><th>Service</th><th>Content</th>';
+      const tail = rows.slice(-500).reverse();
+      const groups = new Map();
+      if (explorerGroupBy === 'host') {
+        tail.forEach((r) => {
+          const k = r.host;
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(r);
+        });
+      } else if (explorerGroupBy === 'severity') {
+        tail.forEach((r) => {
+          const k = lineSeverity(r.line);
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k).push(r);
+        });
+      } else {
+        groups.set('_', tail);
+      }
+      const order = explorerGroupBy === 'none' ? ['_'] : [...groups.keys()].sort();
+      order.forEach((gk) => {
+        const list = groups.get(gk) || [];
+        list.forEach((r) => {
+          const tr = document.createElement('tr');
+          const sev = lineSeverity(r.line);
+          const svc = (r.line.match(/\b[\w.-]+\.(service|target)\b/i) || [])[0] || 'stream';
+          const ts = new Date(r.t).toLocaleTimeString(undefined, { hour12: false });
+          tr.innerHTML = '<td class="ts">' + escapeHtml(ts) + '</td><td class="host">' + escapeHtml(r.host) + '</td><td class="host">' + escapeHtml(svc) + '</td><td class="msg">' + escapeHtml(r.line) + '</td>';
+          if (sev === 'error') tr.style.background = 'rgba(239,68,68,0.06)';
+          else if (sev === 'warn') tr.style.background = 'rgba(245,158,11,0.06)';
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    function rebuildInsights() {
+      const host = document.getElementById('insightsScroll');
+      if (!host) return;
+      const rows = getWindowedLines();
+      const errLines = rows.filter((r) => lineSeverity(r.line) === 'error').slice(-400);
+      const buckets = new Map();
+      errLines.forEach((r) => {
+        const svc = (r.line.match(/\b[\w.-]+\.(service|target)\b/i) || [])[0] || currentServerMeta.id || 'host';
+        buckets.set(svc, (buckets.get(svc) || 0) + 1);
+      });
+      host.innerHTML = '';
+      const top = [...buckets.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+      if (!top.length) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'font-size:0.75rem;color:var(--t4);padding:8px;';
+        empty.textContent = 'No error-pattern lines in this window. Tail a log to populate.';
+        host.appendChild(empty);
+        return;
+      }
+      top.forEach(([svc, n]) => {
+        const card = document.createElement('div');
+        card.className = 'insight-card';
+        const bars = Array.from({ length: 12 }, (_, bi) => {
+          const ratio = n / (top[0][1] || 1);
+          return Math.max(4, Math.round(8 + ratio * 28 * ((bi + 1) / 12)));
+        });
+        card.innerHTML = '<div class="tag">LOG SIGNAL</div><div class="svc">' + escapeHtml(svc) + '</div><div class="mini-bar">' + bars.map((h) => '<span style="height:' + h + 'px"></span>').join('') + '</div><div class="foot"><span>' + n + ' lines</span><span class="insight-badge warn">Live</span></div>';
+        host.appendChild(card);
+      });
+    }
+
+    function destroySecondaryChart() {
+      if (secondaryChart) { secondaryChart.destroy(); secondaryChart = null; }
+    }
+
+    function renderSecondaryViz(mode) {
+      const wrap = document.getElementById('secondaryChartWrap');
+      const canvas = document.getElementById('secondaryChart');
+      if (!wrap || !canvas || typeof Chart === 'undefined') return;
+      const rows = getWindowedLines();
+      destroySecondaryChart();
+      if (mode === 'pie') {
+        let e = 0, w = 0, i = 0;
+        rows.forEach((r) => {
+          const s = lineSeverity(r.line);
+          if (s === 'error') e++;
+          else if (s === 'warn') w++;
+          else i++;
+        });
+        secondaryChart = new Chart(canvas, {
+          type: 'doughnut',
+          data: {
+            labels: ['Error', 'Warn', 'Info'],
+            datasets: [{ data: [e, w, i], backgroundColor: ['#ef4444', '#f59e0b', '#64748b'], borderWidth: 0 }]
+          },
+          options: { animation: { duration: 200 }, plugins: { legend: { position: 'right' } } }
+        });
+        return;
+      }
+      if (mode === 'treemap') {
+        const counts = new Map();
+        rows.forEach((r) => {
+          const tok = (r.line.match(/^\S+/) || [''])[0].slice(0, 24) || '…';
+          counts.set(tok, (counts.get(tok) || 0) + 1);
+        });
+        const top = [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
+        secondaryChart = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: top.map((x) => x[0]),
+            datasets: [{ label: 'Count', data: top.map((x) => x[1]), backgroundColor: 'rgba(2,132,199,0.65)' }]
+          },
+          options: {
+            indexAxis: 'y',
+            animation: { duration: 200 },
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }
+          }
+        });
+      }
+    }
+
+    function setExplorerView(mode) {
+      const allowed = ['list', 'timeseries', 'toplist', 'table', 'pie', 'treemap'];
+      if (!allowed.includes(mode)) mode = 'list';
+      explorerView = mode;
+      document.querySelectorAll('.viz-tab').forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-viz') === mode);
+      });
+      document.querySelectorAll('.nav-rail-btn').forEach((b) => b.classList.remove('active'));
+      const nr = document.getElementById('nrLogs');
+      const nrt = document.getElementById('nrTimeseries');
+      if (nr) nr.classList.toggle('active', mode === 'list');
+      if (nrt) nrt.classList.toggle('active', mode === 'timeseries');
+      const dash = document.getElementById('dashboardContent');
+      if (dash) dash.className = 'dashboard-content viz-' + mode;
+      const det = document.getElementById('explorerExtra');
+      if (det && mode !== 'list') {
+        det.open = true;
+        requestAnimationFrame(() => {
+          if (typeof Chart !== 'undefined' && !logVolumeChart) initLogVolumeChart();
+          if (logVolumeChart && typeof logVolumeChart.resize === 'function') logVolumeChart.resize();
+        });
+      }
+      const panel = document.getElementById('logAnalyticsPanel');
+      const secWrap = document.getElementById('secondaryChartWrap');
+      const chartPanel = document.getElementById('logVolumePanel');
+      const logTableWrap = document.getElementById('logTableWrap');
+      if (chartPanel) chartPanel.classList.remove('hidden');
+      if (panel) {
+        panel.classList.toggle('visible', mode === 'table' || mode === 'toplist' || mode === 'pie' || mode === 'treemap');
+      }
+      if (secWrap) {
+        secWrap.classList.toggle('visible', mode === 'pie' || mode === 'treemap');
+      }
+      if (logTableWrap) {
+        logTableWrap.style.display = (mode === 'pie' || mode === 'treemap') ? 'none' : '';
+      }
+      if (mode === 'timeseries') {
+        const ribbon = document.getElementById('metricsRibbon');
+        if (ribbon) ribbon.classList.add('show');
+        if (!metricsChart && typeof Chart !== 'undefined') initChart();
+        const mt = document.querySelector('#metricsToggle i');
+        if (mt) mt.style.transform = 'rotate(180deg)';
+      }
+      if (mode === 'table' || mode === 'toplist') renderExplorerTable(mode);
+      if (mode === 'pie' || mode === 'treemap') renderSecondaryViz(mode);
+      if (mode === 'list' || mode === 'timeseries') destroySecondaryChart();
+      setTimeout(() => { try { fitAddon.fit(); } catch (e) {} }, 120);
+    }
+
+    function saveExplorerView() {
+      const name = prompt('Name for this view');
+      if (!name || !String(name).trim()) return;
+      const payload = {
+        name: String(name).trim(),
+        view: explorerView,
+        windowMs: explorerWindowMs,
+        chips: [...explorerChips],
+        query: document.getElementById('explorerQuery') ? document.getElementById('explorerQuery').value : '',
+        groupBy: explorerGroupBy,
+      };
+      let views = [];
+      try { views = JSON.parse(localStorage.getItem('explorerSavedViews') || '[]'); } catch (e) { views = []; }
+      views.push(payload);
+      localStorage.setItem('explorerSavedViews', JSON.stringify(views.slice(-40)));
+      populateSavedViews();
+    }
+
+    function populateSavedViews() {
+      const sel = document.getElementById('savedViewsSelect');
+      if (!sel) return;
+      let views = [];
+      try { views = JSON.parse(localStorage.getItem('explorerSavedViews') || '[]'); } catch (e) { views = []; }
+      while (sel.options.length > 1) sel.remove(1);
+      views.forEach((v, idx) => {
+        const o = document.createElement('option');
+        o.value = String(idx);
+        o.textContent = v.name || ('View ' + idx);
+        sel.appendChild(o);
+      });
+    }
+
+    function applySavedView(val) {
+      if (val === '') return;
+      let views = [];
+      try { views = JSON.parse(localStorage.getItem('explorerSavedViews') || '[]'); } catch (e) { return; }
+      const v = views[parseInt(val, 10)];
+      if (!v) return;
+      explorerWindowMs = v.windowMs || 900000;
+      explorerChips = Array.isArray(v.chips) ? [...v.chips] : [];
+      explorerGroupBy = v.groupBy || 'none';
+      const q = document.getElementById('explorerQuery');
+      if (q) q.value = v.query || '';
+      document.querySelectorAll('.time-preset').forEach((b) => {
+        b.classList.toggle('active', parseInt(b.getAttribute('data-ms'), 10) === explorerWindowMs);
+      });
+      document.querySelectorAll('#groupByToggle button').forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-group') === explorerGroupBy);
+      });
+      renderChips();
+      updateExplorerTimeLabel();
+      setExplorerView(v.view || 'list');
+    }
+
+    function populateFacetHosts(servers) {
+      const list = document.getElementById('facetHostsList');
+      if (!list || !Array.isArray(servers)) return;
+      list.innerHTML = '';
+      const byG = {};
+      servers.forEach((s) => {
+        const g = s.group || 'OTHER';
+        if (!byG[g]) byG[g] = [];
+        byG[g].push(s);
+      });
+      Object.keys(byG).sort().forEach((g) => {
+        const sub = document.createElement('div');
+        sub.style.cssText = 'font-size:0.62rem;font-weight:700;color:var(--t4);margin:6px 0 4px;text-transform:uppercase;letter-spacing:0.06em;';
+        sub.textContent = g;
+        list.appendChild(sub);
+        byG[g].forEach((s) => {
+          const row = document.createElement('label');
+          row.className = 'facet-row';
+          const n = s.id || '';
+          row.innerHTML = '<input type="radio" name="facetHostPick" value="' + escapeHtml(n) + '"> <span>' + escapeHtml(n) + '</span><span class="facet-count">' + escapeHtml(String(s.host || '')).slice(0, 12) + '</span>';
+          row.querySelector('input').disabled = !s.enabled;
+          row.querySelector('input').onchange = () => {
+            if (!s.enabled) return;
+            const item = Array.from(document.querySelectorAll('.server-item')).find((el) => el.querySelector('.server-name') && el.querySelector('.server-name').textContent === s.id);
+            if (item) item.click();
+          };
+          list.appendChild(row);
+        });
+      });
+    }
+
+    function explorerBoot() {
+      updateExplorerTimeLabel();
+      populateSavedViews();
+      if (!volumeTickTimer) volumeTickTimer = setInterval(tickVolumeSecond, 1000);
+      if (!insightsTimer) insightsTimer = setInterval(rebuildInsights, 8000);
+      const det = document.getElementById('explorerExtra');
+      if (det) {
+        det.addEventListener('toggle', () => {
+          if (!det.open) return;
+          requestAnimationFrame(() => {
+            if (typeof Chart === 'undefined') return;
+            if (!logVolumeChart) initLogVolumeChart();
+            else if (logVolumeChart.resize) logVolumeChart.resize();
+            if (secondaryChart && secondaryChart.resize) secondaryChart.resize();
+          });
+        });
+      }
+      document.querySelectorAll('.time-preset').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          explorerWindowMs = parseInt(btn.getAttribute('data-ms'), 10) || 900000;
+          document.querySelectorAll('.time-preset').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          updateExplorerTimeLabel();
+          refreshExplorerData();
+        });
+      });
+      const gt = document.getElementById('groupByToggle');
+      if (gt) {
+        gt.addEventListener('click', (e) => {
+          const t = e.target.closest('button');
+          if (!t) return;
+          explorerGroupBy = t.getAttribute('data-group') || 'none';
+          gt.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+          t.classList.add('active');
+          renderExplorerTable(explorerView);
+        });
+      }
+      const exq = document.getElementById('explorerQuery');
+      if (exq) {
+        exq.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') { e.preventDefault(); applyExplorerSearch(); }
+        });
+      }
+      const fv = document.getElementById('facetVolumeChart');
+      if (fv) {
+        fv.addEventListener('change', () => {
+          const p = document.getElementById('logVolumePanel');
+          if (p) p.classList.toggle('hidden', !fv.checked);
+        });
+      }
+      const serverSearchEl = document.getElementById('serverSearch');
+      if (serverSearchEl) {
+        serverSearchEl.addEventListener('input', () => filterServers(serverSearchEl.value));
+        serverSearchEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            serverSearchEl.value = '';
+            filterServers('');
+          }
+        });
+      }
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', explorerBoot);
+    else explorerBoot();
+
+    // Startup flow
+    if (inviteTokenParam) {
+      validateInvite();
+    } else {
+      checkAuth();
+    }
+
+    function getGreeting(username) {
+      const hour = new Date().getHours();
+      if (hour < 12) return `Good morning, ${username}!`;
+      if (hour < 18) return `Good afternoon, ${username}!`;
+      return `Good evening, ${username}!`;
+    }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const user = await res.json();
+          document.getElementById('userInfo').innerText = getGreeting(user.username);
+          const adminGroups = ['infra'];
+          if (adminGroups.includes(user.group)) {
+            document.getElementById('adminBtn').style.display = 'flex';
+            const nrr = document.getElementById('nrAdminRail');
+            if (nrr) nrr.style.display = 'flex';
+          }
+          
+          document.getElementById('loginModal').style.display = 'none';
+          document.getElementById('app-container').classList.add('visible');
+          loadServers();
+        } else {
+          document.getElementById('loginModal').style.display = 'flex';
+        }
+      } catch (e) {
+        document.getElementById('loginModal').style.display = 'flex';
+      }
+    }
+
+    async function doLogin() {
+      const u = document.getElementById('loginUsername').value;
+      const p = document.getElementById('loginPassword').value;
+      const err = document.getElementById('loginError');
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({username: u, password: p})
+        });
+        if (res.ok) {
+          err.innerText = '';
+          window.location.reload();
+        } else {
+          const data = await res.json();
+          err.innerText = data.error || 'Login failed';
+        }
+      } catch (e) { err.innerText = 'Network error'; }
+    }
+
+    async function logout() {
+      await fetch('/api/logout', { method: 'POST' });
+      window.location.reload();
+    }
+
+    async function validateInvite() {
+      try {
+        const res = await fetch('/api/invite/validate', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({token: inviteTokenParam})
+        });
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('inviteUsername').innerText = data.username;
+          document.getElementById('inviteModal').style.display = 'flex';
+        } else {
+          alert('Invite link is invalid or expired.');
+          window.location.href = '/';
+        }
+      } catch (e) { alert('Error validating invite'); }
+    }
+
+    async function acceptInvite() {
+      const p = document.getElementById('invitePassword').value;
+      const err = document.getElementById('inviteError');
+      try {
+        const res = await fetch('/api/invite/accept', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({token: inviteTokenParam, password: p})
+        });
+        if (res.ok) {
+          alert('Account created! Please login.');
+          window.location.href = '/';
+        } else {
+          const data = await res.json();
+          err.innerText = data.error || 'Failed to set password';
+        }
+      } catch (e) { err.innerText = 'Network error'; }
+    }
+
+    async function openAdminPanel() {
+      document.getElementById('adminModal').style.display = 'flex';
+      loadUsers();
+    }
+
+    async function loadUsers() {
+      const res = await fetch('/api/users');
+      if (!res.ok) return;
+      const users = await res.json();
+      const tbody = document.getElementById('usersTableBody');
+      tbody.innerHTML = '';
+      users.forEach((u) => {
+        const tr = document.createElement('tr');
+        const tdUser = document.createElement('td');
+        tdUser.style.fontWeight = '600';
+        tdUser.textContent = u.username;
+        const tdGroup = document.createElement('td');
+        tdGroup.textContent = u.group;
+        const tdStatus = document.createElement('td');
+        const pill = document.createElement('span');
+        pill.className = 'status-pill ' + (u.enabled ? 'active' : 'disabled');
+        pill.textContent = u.enabled ? 'Active' : 'Disabled';
+        tdStatus.appendChild(pill);
+        const tdSrv = document.createElement('td');
+        tdSrv.textContent = (u.assignedServers && u.assignedServers.join(', ')) || 'All/None';
+        const tdAct = document.createElement('td');
+        tdAct.style.display = 'flex';
+        tdAct.style.gap = '8px';
+        const b1 = document.createElement('button');
+        b1.className = 'btn-action';
+        b1.textContent = u.enabled ? 'Disable' : 'Enable';
+        b1.onclick = () => toggleUser(u.id, !u.enabled);
+        const b2 = document.createElement('button');
+        b2.className = 'btn-action';
+        b2.textContent = 'Invite Link';
+        b2.onclick = () => regenInvite(u.id);
+        tdAct.appendChild(b1);
+        tdAct.appendChild(b2);
+        if (u.username !== 'ITinfra') {
+          const b3 = document.createElement('button');
+          b3.className = 'btn-action';
+          b3.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          b3.style.color = '#ef4444';
+          b3.textContent = 'Delete';
+          b3.onclick = () => deleteUser(u.id);
+          tdAct.appendChild(b3);
+        }
+        tr.appendChild(tdUser);
+        tr.appendChild(tdGroup);
+        tr.appendChild(tdStatus);
+        tr.appendChild(tdSrv);
+        tr.appendChild(tdAct);
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function deleteUser(id) {
+      if (!confirm('Are you sure you want to delete this user?')) return;
+      try {
+        const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          loadUsers();
+        } else {
+          const data = await res.json();
+          alert(data.error || 'Failed to delete user');
+        }
+      } catch (e) { alert('Network error'); }
+    }
+
+    async function createUser() {
+      const u = document.getElementById('newUsername').value;
+      const g = document.getElementById('newGroup').value;
+      const s = document.getElementById('newServers').value.split(',').map(x=>x.trim()).filter(x=>x);
+      const err = document.getElementById('adminError');
+      const succ = document.getElementById('adminSuccess');
+      
+      try {
+        const res = await fetch('/api/users', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({username: u, group: g, assignedServers: s})
+        });
+        const data = await res.json();
+        if (res.ok) {
+          err.innerText = '';
+          succ.innerHTML = `Invite Link: <a href="${window.location.origin}${data.inviteLink}" target="_blank">${window.location.origin}${data.inviteLink}</a>`;
+          loadUsers();
+        } else {
+          succ.innerText = '';
+          err.innerText = data.error || 'Failed to create user';
+        }
+      } catch (e) { err.innerText = 'Network error'; }
+    }
+
+    async function toggleUser(id, enable) {
+      const res = await fetch(`/api/users/${id}`, { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({enabled: enable}) });
+      if (res.ok) loadUsers();
+    }
+
+    async function downloadFleetAudit() {
+      const start = document.getElementById('auditStartDate').value;
+      const end = document.getElementById('auditEndDate').value;
+      const srvInput = document.getElementById('auditServers').value;
+      const status = document.getElementById('auditStatus');
+      const btn = document.getElementById('downloadAuditBtn');
+
+      if (!start || !end) { alert('Please select a date range'); return; }
+      
+      const serverIds = srvInput ? srvInput.split(',').map(s => s.trim()).filter(Boolean) : null;
+      
+      btn.disabled = true;
+      btn.innerText = 'GENERATING ARCHIVE...';
+      status.innerText = 'Connecting to servers and collecting logs...';
+      status.style.color = 'var(--text-main)';
+
+      try {
+        const response = await fetch('/api/admin/audit-zip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ startDate: start, endDate: end, serverIds })
+        });
+
+        if (!response.ok) {
+          let errMsg = 'Failed to generate audit';
+          try {
+            const ct = response.headers.get('content-type');
+            if (ct && ct.includes('application/json')) {
+              const err = await response.json();
+              errMsg = err.error || errMsg;
+            } else {
+              errMsg = await response.text() || errMsg;
+            }
+          } catch (e) { errMsg = response.statusText || errMsg; }
+          throw new Error(errMsg);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fleet_audit_${start}_to_${end}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        status.innerText = '✅ Audit archive downloaded successfully!';
+        status.style.color = '#27c93f';
+      } catch (e) {
+        status.innerText = '❌ Error: ' + e.message;
+        status.style.color = '#ef4444';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'GENERATE & DOWNLOAD ZIP';
+      }
+    }
+
+    async function regenInvite(id) {
+      try {
+        const res = await fetch(`/api/users/${id}/invite`, { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok) {
+          document.getElementById('adminSuccess').innerText = `New Invite Link: ${window.location.origin}${data.inviteLink}`;
+        } else {
+          alert(data.error || 'Failed to regenerate invite');
+        }
+      } catch (e) {
+        alert('Network error');
+      }
+    }
+
+    // --- LOG BROWSER LOGIC ---
+    let discoveredLogs = [];
+    function openLogBrowser() {
+      document.getElementById('logBrowserModal').style.display = 'flex';
+      renderLogBrowser();
+    }
+    
+    function renderLogBrowser(filter) {
+      const list = document.getElementById('logBrowserList');
+      list.innerHTML = '';
+      const termLower = (filter || '').toLowerCase();
+      
+      const filtered = discoveredLogs.filter(f => f.toLowerCase().includes(termLower)).slice(0, 200);
+      
+      if (filtered.length === 0) {
+        list.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No logs discovered yet. Connect to a server first.</div>';
+        return;
+      }
+      
+      filtered.forEach(file => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:10px 16px; border-bottom:1px solid rgba(255,255,255,0.05); cursor:pointer; display:flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:0.85rem; transition: background 0.15s;';
+        div.onmouseover = () => { div.style.background = 'rgba(255,255,255,0.05)'; };
+        div.onmouseout = () => { div.style.background = 'transparent'; };
+        div.innerHTML = '<i data-lucide="file-text" width="16" height="16" style="color: var(--accent); flex-shrink:0;"></i> ';
+        const span = document.createElement('span');
+        span.style.wordBreak = 'break-all';
+        span.textContent = file;
+        div.appendChild(span);
+        div.onclick = () => {
+          document.getElementById('logPathInput').value = file;
+          document.getElementById('logBrowserModal').style.display = 'none';
+          executeMacro('tail');
+        };
+        list.appendChild(div);
+      });
+      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+    
+    const logSearchEl = document.getElementById('logSearchInput');
+    if (logSearchEl) {
+      logSearchEl.addEventListener('input', (e) => {
+        renderLogBrowser(e.target.value);
+      });
+    }
+
+    // --- METRICS HELPERS ---
+    function toggleMetrics() {
+      const ribbon = document.getElementById('metricsRibbon');
+      const isHidden = !ribbon.classList.contains('show');
+      const chev = document.querySelector('#metricsToggle i');
+
+      if (isHidden) {
+        ribbon.classList.add('show');
+        if (!metricsChart && typeof Chart !== 'undefined') initChart();
+        if (chev) chev.style.transform = 'rotate(180deg)';
+      } else {
+        ribbon.classList.remove('show');
+        if (chev) chev.style.transform = 'rotate(0deg)';
+      }
+      setTimeout(() => fitAddon.fit(), 120);
+    }
+
+    /** Chart redraw at most ~1.2 Hz to avoid idle CPU when panel is open */
+    let metricsChartFlushTimer = null;
+    let pendingChartMem = null;
+    let pendingChartCpu = null;
+    function scheduleChartUpdate(memUsedGB, cpuPercent) {
+      pendingChartMem = memUsedGB;
+      pendingChartCpu = cpuPercent;
+      if (metricsChartFlushTimer != null) return;
+      metricsChartFlushTimer = setTimeout(() => {
+        metricsChartFlushTimer = null;
+        const ribbon = document.getElementById('metricsRibbon');
+        if (!ribbon.classList.contains('show') || !metricsChart) return;
+        updateChart(pendingChartMem, pendingChartCpu);
+      }, 850);
+    }
+
+    function parseAndDisplayMetrics(data) {
+      try {
+        const parts = data.split('---');
+        const memLines = (parts[0]||'').split('\n');
+        const memLine = memLines.find(l => /^Mem:/i.test(l.trim()));
+        let usedGBForChart = 0;
+
+        if (memLine) {
+          const nums = memLine.trim().replace(/^Mem:/i, '').trim().split(/\s+/).map(n => parseInt(n));
+          const totalMB = nums[0] || 0;
+          const usedMB = nums[1] || 0;
+          const availableMB = nums[5] || nums[2] || 0;
+
+          const totalGB = totalMB / 1024;
+          const usedGB = usedMB / 1024;
+          const availableGB = availableMB / 1024;
+          usedGBForChart = totalMB > 0 ? usedGB : 0;
+          const loadPercent = totalGB > 0 ? (usedGB / totalGB) * 100 : 0;
+          const loadColor = loadPercent >= 85 ? 'var(--accent-danger)' : (loadPercent >= 70 ? '#fbbf24' : 'var(--accent)');
+
+          document.getElementById('metricMem').innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div><span class="mk">Total</span><div class="mv" style="font-size:1.1rem">${totalGB.toFixed(1)} GB</div></div>
+              <div><span class="mk">Used %</span><div class="mv" style="font-size:1.1rem; color:${loadColor}">${loadPercent.toFixed(0)}%</div></div>
+              <div><span class="mk">Used</span><div class="mv" style="font-size:1.1rem">${usedGB.toFixed(2)} GB</div></div>
+              <div><span class="mk">Avail</span><div class="mv" style="font-size:1.1rem">${availableGB.toFixed(2)} GB</div></div>
+            </div>
+          `;
+        }
+
+        const cpuLine = (parts[1]||'').split('\n').find(l => /^[%]?Cpu/i.test(l.trim()));
+        let cpuUs = 0;
+        if (cpuLine) {
+          const usMatch = cpuLine.match(/([\d.]+)\s*us/);
+          if (usMatch) cpuUs = parseFloat(usMatch[1]);
+          document.getElementById('metricTop').innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <div><span class="mk">CPU</span><div class="mv" style="font-size:1.1rem">${cpuUs.toFixed(1)}%</div></div>
+              <div><span class="mk">Idle</span><div class="mv" style="font-size:1.1rem">${(100 - cpuUs).toFixed(1)}%</div></div>
+            </div>
+          `;
+          scheduleChartUpdate(usedGBForChart, cpuUs);
+        }
+      } catch(e) { console.error('Metric parsing error:', e); }
+    }
+
+    // --- CHART.JS LIVE METRICS ---
+    let metricsChart = null;
+    const chartLabels = [];
+    const chartMemData = [];
+    const chartCpuData = [];
+    const MAX_CHART_POINTS = 20;
+
+    function initChart() {
+      const ctx = document.getElementById('metricsChart');
+      if (!ctx) return;
+      if (metricsChart) { metricsChart.destroy(); metricsChart = null; }
+      chartLabels.length = 0; chartMemData.length = 0; chartCpuData.length = 0;
+      metricsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [
+            { label: 'Mem used (GB)', data: chartMemData, borderColor: '#00f5ff', backgroundColor: 'rgba(0,245,255,0.06)', borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true },
+            { label: 'CPU %', data: chartCpuData, borderColor: '#7000ff', backgroundColor: 'rgba(112,0,255,0.06)', borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true }
+          ]
+        },
+          options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'nearest', intersect: false },
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: false },
+            y: { display: false, min: 0 }
+          }
+        }
+      });
+    }
+
+    function updateChart(memUsedGB, cpuPercent) {
+      if (!metricsChart) return;
+      const now = new Date().toLocaleTimeString();
+      chartLabels.push(now);
+      chartMemData.push(parseFloat(memUsedGB) || 0);
+      chartCpuData.push(parseFloat(cpuPercent) || 0);
+      if (chartLabels.length > MAX_CHART_POINTS) {
+        chartLabels.shift(); chartMemData.shift(); chartCpuData.shift();
+      }
+      metricsChart.update('none'); // no animation for performance
+    }
+
+    // --- SESSION TIMEOUT (15 min inactivity) ---
+    const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+    let idleTimer = null;
+    function resetIdleTimer() {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(async () => {
+        if (ws && ws.readyState === WebSocket.OPEN) ws.close();
+        await fetch('/api/logout', { method: 'POST' });
+        document.getElementById('app-container').classList.remove('visible');
+        document.getElementById('loginModal').style.display = 'flex';
+        document.querySelector('#loginModal h2').textContent = '⚠️ Session Expired (15 min inactivity)';
+      }, IDLE_TIMEOUT_MS);
+    }
+    document.addEventListener('mousemove', resetIdleTimer);
+    document.addEventListener('keydown', resetIdleTimer);
+    document.addEventListener('click', resetIdleTimer);
+
+    // --- TERMINAL & CORE APP LOGIC ---
+    let currentLogFile = '/var/log/messages';
+    const term = new Terminal({
+      cursorBlink: true, cursorStyle: 'block',
+      theme: {
+        background: '#300a24', // Ubuntu eggplant
+        foreground: '#eeeeec', // Ubuntu light gray
+        cursor: '#bbbbbb',
+        cursorAccent: '#300a24',
+        selectionBackground: 'rgba(255, 255, 255, 0.2)',
+        black: '#2e3436', red: '#cc0000', green: '#4e9a06',
+        yellow: '#c4a000', blue: '#3465a4', magenta: '#75507b',
+        cyan: '#06989a', white: '#d3d7cf',
+        brightBlack: '#555753', brightRed: '#ef2929', brightGreen: '#8ae234',
+        brightYellow: '#fce94f', brightBlue: '#729fcf', brightMagenta: '#ad7fa8',
+        brightCyan: '#34e2e2', brightWhite: '#eeeeec',
+      },
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: 14, lineHeight: 1.2,
+      scrollback: 10000, scrollSensitivity: 1.5,
+      letterSpacing: 0, allowTransparency: false,
+    });
+    window.term = term;
+    const fitAddon = new FitAddon.FitAddon();
+    const searchAddon = new SearchAddon.SearchAddon();
+    term.loadAddon(fitAddon); term.loadAddon(searchAddon);
+    try {
+      const webglAddon = new WebglAddon.WebglAddon();
+      term.loadAddon(webglAddon);
+    } catch (e) {
+      console.warn('WebGL addon failed to load, falling back to canvas', e);
+    }
+    
+    term.open(document.getElementById('terminal'));
+    let ws = null;
+
+    /** Coalesce rapid WebSocket chunks into one paint per frame */
+    let pendingTermOut = '';
+    let termFlushRaf = null;
+    function enqueueTermWrite(str) {
+      pendingTermOut += str;
+      if (termFlushRaf != null) return;
+      termFlushRaf = requestAnimationFrame(() => {
+        termFlushRaf = null;
+        if (pendingTermOut.length) {
+          term.write(pendingTermOut);
+          pendingTermOut = '';
+        }
+      });
+    }
+    function flushTermNow() {
+      if (termFlushRaf != null) cancelAnimationFrame(termFlushRaf);
+      termFlushRaf = null;
+      if (pendingTermOut.length) {
+        term.write(pendingTermOut);
+        pendingTermOut = '';
+      }
+    }
+
+    // Debounced resize for smooth performance
+    let resizeTimeout = null;
+    function debouncedFit() {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (document.getElementById('terminalWindow').style.display !== 'none') {
+          fitAddon.fit();
+          if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action: 'resize', cols: term.cols, rows: term.rows }));
+        }
+      }, 120);
+    }
+
+    window.addEventListener('resize', debouncedFit);
+
+    // ResizeObserver for reliable terminal sizing
+    const terminalEl = document.getElementById('terminal');
+    if (window.ResizeObserver) {
+      new ResizeObserver(debouncedFit).observe(terminalEl);
+    }
+
+    term.onResize(size => {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action: 'resize', cols: size.cols, rows: size.rows }));
+    });
+
+    term.onData(data => {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action: 'input', data: data }));
+    });
+
+    function loadServers() {
+      fetch('/servers')
+        .then(res => res.json())
+        .then(servers => {
+          const list = document.getElementById('serverList');
+          list.innerHTML = '';
+          const groups = servers.reduce((acc, server) => {
+            let g = server.group || 'OTHER';
+            if (!acc[g]) acc[g] = [];
+            acc[g].push(server);
+            return acc;
+          }, {});
+
+          Object.keys(groups).sort().forEach(groupName => {
+            const srvs = groups[groupName];
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'server-group open';
+            groupDiv.dataset.groupKey = String(groupName).toLowerCase();
+            groupDiv.innerHTML = `<div class="server-group-header" onclick="this.parentElement.classList.toggle('open')"><i data-lucide="folder" class="folder-icon" width="14" height="14"></i>${groupName}<span class="server-group-badge">${srvs.length}</span><i data-lucide="chevron-right" class="chevron-icon" width="12" height="12"></i></div><div class="server-group-content"></div>`;
+            const contentDiv = groupDiv.querySelector('.server-group-content');
+
+            srvs.forEach(s => {
+              const item = document.createElement('div');
+              item.className = `server-item ${s.enabled ? '' : 'disabled'}`;
+              item.innerHTML = `<div class="server-info"><span class="server-name">${s.id}</span><span class="server-ip">${s.host}</span></div><div class="status-indicator"></div>`;
+              item.dataset.search = [s.group, s.id, s.host].filter(Boolean).join(' ').toLowerCase();
+              if (s.enabled) {
+                item.onclick = (e) => { e.stopPropagation(); connectToServer(s.id, item, s); };
+              }
+              contentDiv.appendChild(item);
+            });
+            list.appendChild(groupDiv);
+          });
+
+          // [Cleanup] Removed dynamic group population that mixed server groups into user groups
+
+          if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+          if (typeof window.addStaggerToServerItems === 'function') {
+            setTimeout(window.addStaggerToServerItems, 30);
+          }
+          populateFacetHosts(servers);
+          const ss = document.getElementById('serverSearch');
+          filterServers(ss && ss.value ? ss.value : '');
+        });
+    }
+
+    function filterServers(query) {
+      const q = query.trim().toLowerCase();
+      document.querySelectorAll('.server-group').forEach((group) => {
+        const gkey = (group.dataset.groupKey || '').toLowerCase();
+        let anyVisible = false;
+        group.querySelectorAll('.server-item').forEach((item) => {
+          const bundle = (item.dataset.search || '');
+          const name = (item.querySelector('.server-name')?.textContent || '').toLowerCase();
+          const ip = (item.querySelector('.server-ip')?.textContent || '').toLowerCase();
+          const show = !q || bundle.includes(q) || name.includes(q) || ip.includes(q) || gkey.includes(q);
+          if (show) {
+            item.style.removeProperty('display');
+            anyVisible = true;
+          } else {
+            item.style.display = 'none';
+          }
+        });
+        if (!anyVisible) {
+          group.style.display = 'none';
+        } else {
+          group.style.removeProperty('display');
+          if (q) group.classList.add('open');
+        }
+      });
+    }
+
+    function connectToServer(serverId, element, serverData) {
+      document.querySelectorAll('.server-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      
+      discoveredLogs = [];
+      currentServerMeta = { id: serverData.id, host: serverData.host, group: serverData.group || '' };
+      logLineBuffer.length = 0;
+      volumeAggCounter = 0;
+      volumePerSecond.length = 0;
+      for (let i = 0; i < 60; i++) volumePerSecond.push(0);
+      if (logVolumeChart) {
+        logVolumeChart.data.datasets[0].data = [...volumePerSecond];
+        logVolumeChart.update('none');
+      }
+      document.querySelectorAll('[name="facetHostPick"]').forEach((r) => { r.checked = r.value === serverData.id; });
+      document.getElementById('logPathInput').value = '/var/log/messages';
+
+      const emptyState = document.getElementById('emptyState');
+      const termWindow = document.getElementById('terminalWindow');
+      
+      emptyState.style.display = 'none';
+      termWindow.style.display = 'flex';
+      termWindow.style.opacity = '1';
+      termWindow.style.transform = 'none';
+
+      document.getElementById('topbarEmpty').style.display = 'none';
+      document.getElementById('topbarInfo').style.display = 'flex';
+      document.getElementById('serverTitle').innerText = `${serverData.group} / ${serverData.id}`;
+      document.getElementById('serverIp').innerText = serverData.host;
+      document.getElementById('metricsRibbon').classList.remove('show');
+      const mt = document.querySelector('#metricsToggle i');
+      if (mt) mt.style.transform = 'rotate(0deg)';
+      if (metricsChart) { metricsChart.destroy(); metricsChart = null; }
+      document.getElementById('logActions').style.display = 'flex';
+      
+      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+
+      if (ws) ws.close();
+      flushTermNow();
+      term.clear();
+      document.getElementById('loadingOverlay').classList.add('active');
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${window.location.host}`);
+      
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ action: 'connect', serverId }));
+      };
+
+      ws.onmessage = (event) => {
+        let msg;
+        try {
+          msg = JSON.parse(event.data);
+        } catch (parseErr) {
+          console.warn('Malformed WebSocket message', parseErr);
+          return;
+        }
+        switch (msg.type) {
+          case 'connected':
+            document.getElementById('loadingOverlay').classList.remove('active');
+            resetIdleTimer();
+            term.focus();
+            setTimeout(() => fitAddon.fit(), 80);
+            break;
+          case 'log_catalog':
+            try {
+              const catalog = msg.data || {};
+              discoveredLogs = Array.isArray(catalog.files) ? catalog.files : [];
+              const services = Array.isArray(catalog.services) ? catalog.services : [];
+              
+              const journalServicesList = document.getElementById('journalServices');
+              if (journalServicesList) {
+                journalServicesList.innerHTML = '';
+                services.slice(0, 400).forEach(s => {
+                  const opt = document.createElement('option');
+                  opt.value = s;
+                  journalServicesList.appendChild(opt);
+                });
+              }
+
+              if (discoveredLogs.length > 0) {
+                document.getElementById('logPathInput').value = discoveredLogs[0];
+              }
+            } catch (e) {}
+            break;
+          case 'metrics':
+            parseAndDisplayMetrics(msg.data);
+            break;
+          case 'output':
+            ingestLogStream(msg.data);
+            enqueueTermWrite(msg.data);
+            break;
+          case 'error':
+            document.getElementById('loadingOverlay').classList.remove('active');
+            flushTermNow();
+            term.write(`\r\n\x1b[38;2;239;68;68m[Error]: ${msg.data}\x1b[0m\r\n`);
+            break;
+          case 'disconnected':
+            flushTermNow();
+            term.write(`\r\n\x1b[38;2;245;158;11m[System]: ${msg.data}\x1b[0m\r\n`);
+            break;
+        }
+      };
+
+      ws.onclose = () => {
+        document.getElementById('loadingOverlay').classList.remove('active');
+          term.write('\r\n\x1b[31m[System]: Connection closed.\x1b[0m\r\n');
+      };
+    }
+
+    function executeMacro(type) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      
+      if (type === 'clear') {
+        term.clear();
+        return;
+      }
+      
+      ws.send(JSON.stringify({ action: 'input', data: '\x03' }));
+      
+      setTimeout(() => {
+        let cmd = '';
+        const path = document.getElementById('logPathInput').value || '/var/log/messages';
+        const grepTerm = document.getElementById('liveGrepInput').value.trim();
+        const gEsc = grepTerm.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+        const grepSuffix = grepTerm ? ` | grep --line-buffered -i "${gEsc}"` : '';
+        
+        if (type === 'tail') {
+          cmd = `sudo tail -n 100 -f ${path}${grepSuffix}\r`;
+        } else if (type === 'grep') {
+          if (!grepTerm) { term.write('\r\n\x1b[38;2;245;158;11m[System]: Please enter a search term in the Grep box first.\x1b[0m\r\n'); return; }
+          cmd = `sudo grep -i "${gEsc}" ${path} | tail -n 20\r`;
+        } else if (type === 'error') {
+          cmd = `sudo grep -i "error" ${path} | tail -n 20\r`;
+        } else if (type === 'exception') {
+          cmd = `sudo grep -i "exception" ${path} | tail -n 20\r`;
+        } else if (type === 'journal') {
+          const svc = document.getElementById('journalServiceInput').value;
+          if (!svc) { term.write('\r\n\x1b[38;2;245;158;11m[System]: Please enter a service name first.\x1b[0m\r\n'); return; }
+          cmd = `sudo journalctl -u ${svc} -n 100 -f${grepSuffix}\r`;
+        }
+        
+        if (cmd) ws.send(JSON.stringify({ action: 'input', data: cmd }));
+        term.focus();
+      }, 300);
+    }
+
+    // Add Enter listener to Grep input
+    document.getElementById('liveGrepInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') executeMacro('tail');
+    });
+
+    // Search Addon Logic
+    const searchInput = document.getElementById('searchInput');
+    function executeSearch(reverse = false) {
+      const val = searchInput.value;
+      if (val) {
+        if (! (reverse ? searchAddon.findPrevious(val) : searchAddon.findNext(val))) {
+          searchInput.style.color = '#ef4444'; setTimeout(() => { searchInput.style.color = '#fff'; }, 1000);
+        }
+      }
+    }
+    searchInput.addEventListener('input', (e) => { if (!e.target.value) searchAddon.clearDecorations(); });
+    searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') executeSearch(e.shiftKey); });
+    document.getElementById('searchBtnNext').addEventListener('click', () => executeSearch(false));
+    document.getElementById('searchBtnPrev').addEventListener('click', () => executeSearch(true));
+
+
+    // --- THEME TOGGLE LOGIC ---
+    function initTheme() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'light') {
+        document.body.classList.add('light-mode');
+        updateThemeUI(true);
+      } else {
+        updateThemeUI(false);
+      }
+    }
+
+    function toggleTheme() {
+      try {
+        const isLight = document.body.classList.toggle('light-mode');
+        localStorage.setItem('theme', isLight ? 'light' : 'dark');
+        updateThemeUI(isLight);
+      } catch (err) { console.error(err); }
+    }
+
+    function applyXtermTheme(isLight) {
+      if (!window.term) return;
+      if (isLight) {
+        window.term.options.theme = {
+          background: '#fcfcfc', foreground: '#2d2d2d', cursor: '#e95420',
+          selectionBackground: 'rgba(233, 84, 32, 0.2)',
+          black: '#2d2d2d', red: '#e95420', green: '#38a873',
+          yellow: '#f9a825', blue: '#409ad5', magenta: '#a34790',
+          cyan: '#00a5a5', white: '#f5f6f7',
+          brightBlack: '#6d6d6d', brightRed: '#e95420', brightGreen: '#38a873',
+          brightYellow: '#f9a825', brightBlue: '#409ad5', brightMagenta: '#a34790',
+          brightCyan: '#00a5a5', brightWhite: '#ffffff',
+        };
+      } else {
+        window.term.options.theme = {
+          background: '#030508', foreground: '#e2e8f0', cursor: '#00f5ff',
+          cursorAccent: '#030508', selectionBackground: 'rgba(0, 245, 255, 0.2)',
+          black: '#0d1117', red: '#ff4b4b', green: '#27c93f',
+          yellow: '#ffbd2e', blue: '#00f5ff', magenta: '#b794f4',
+          cyan: '#00e396', white: '#e2e8f0',
+          brightBlack: '#484f58', brightRed: '#ff6b6b', brightGreen: '#4ade80',
+          brightYellow: '#fde68a', brightBlue: '#7dd3fc', brightMagenta: '#c4b5fd',
+          brightCyan: '#67e8f9', brightWhite: '#fff',
+        };
+      }
+      try {
+        window.term.refresh(0, Math.max(0, window.term.rows - 1));
+      } catch (e) { /* ignore */ }
+    }
+
+    function updateThemeUI(isLight) {
+      const wrap = document.getElementById('themeIconWrap');
+      if (isLight) {
+        wrap.innerHTML = '<i data-lucide="moon" width="16" height="16"></i>';
+      } else {
+        wrap.innerHTML = '<i data-lucide="sun" width="16" height="16"></i>';
+      }
+      applyXtermTheme(isLight);
+      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
+    }
+
+    initTheme();
+
+    function openFind() {
+      try {
+        const overlay = document.getElementById('searchOverlay');
+        overlay.style.display = 'flex';
+        document.getElementById('searchInput').focus();
+      } catch (err) { console.error(err); }
+    }
+
+    async function openDownloadModal() {
+      const modal = document.getElementById('downloadModal');
+      const select = document.getElementById('downloadServerSelect');
+      modal.style.display = 'flex';
+      
+      // Reset view
+      document.getElementById('downloadFileListContainer').style.display = 'none';
+      document.getElementById('downloadBtn').style.display = 'none';
+      document.getElementById('searchLogsBtn').style.display = 'block';
+      document.getElementById('downloadStatus').innerText = '';
+      
+      // Populate server list
+      try {
+        const res = await fetch('/servers');
+        const servers = await res.json();
+        select.innerHTML = '';
+        servers.forEach((s) => {
+          const o = document.createElement('option');
+          o.value = s.id;
+          o.textContent = (s.group || '') + ' / ' + (s.id || '');
+          select.appendChild(o);
+        });
+      } catch (e) { console.error('Failed to load servers for download', e); }
+      
+      // Set default date range to today
+      const today = new Date();
+      document.getElementById('downloadStartDate').valueAsDate = today;
+      document.getElementById('downloadEndDate').valueAsDate = today;
+    }
+
+    async function searchLogsForDownload() {
+      const serverId = document.getElementById('downloadServerSelect').value;
+      const startDate = document.getElementById('downloadStartDate').value;
+      const endDate = document.getElementById('downloadEndDate').value;
+      const path = document.getElementById('downloadPath').value || '/var/log';
+      const btn = document.getElementById('searchLogsBtn');
+      const status = document.getElementById('downloadStatus');
+      const list = document.getElementById('downloadFileList');
+      const listContainer = document.getElementById('downloadFileListContainer');
+      const downloadBtn = document.getElementById('downloadBtn');
+      
+      if (!startDate || !endDate) { alert('Please select both start and end dates'); return; }
+      
+      btn.disabled = true;
+      btn.innerText = 'Searching...';
+      status.style.color = 'var(--text-dim)';
+      status.innerText = `Scanning range ${startDate} to ${endDate}...`;
+      list.innerHTML = '';
+      
+      try {
+        const res = await fetch(`/api/list-logs-by-date?serverId=${serverId}&startDate=${startDate}&endDate=${endDate}&path=${encodeURIComponent(path)}`);
+        const data = await res.json();
+        
+        if (res.ok && data.files && data.files.length > 0) {
+          status.innerText = `Found ${data.files.length} matching files.`;
+          status.style.color = 'var(--text-main)';
+          listContainer.style.display = 'block';
+          downloadBtn.style.display = 'block';
+          btn.style.display = 'none';
+          
+          data.files.forEach((file) => {
+            const div = document.createElement('label');
+            div.style.cssText = 'display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.85rem; padding: 4px 8px; border-radius: 6px; transition: background 0.2s;';
+            div.onmouseover = () => { div.style.background = 'rgba(255,255,255,0.05)'; };
+            div.onmouseout = () => { div.style.background = 'transparent'; };
+            const inp = document.createElement('input');
+            inp.type = 'checkbox';
+            inp.className = 'log-check';
+            inp.value = file;
+            inp.addEventListener('change', updateDownloadBtnCount);
+            const span = document.createElement('span');
+            span.style.wordBreak = 'break-all';
+            span.textContent = file;
+            div.appendChild(inp);
+            div.appendChild(span);
+            list.appendChild(div);
+          });
+          updateDownloadBtnCount();
+        } else {
+          status.style.color = '#ef4444';
+          status.innerText = data.error || 'No matching logs found for this date.';
+        }
+      } catch (e) {
+        status.style.color = '#ef4444';
+        status.innerText = 'Error connecting to server.';
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Search Logs';
+      }
+    }
+
+    function updateDownloadBtnCount() {
+      const count = document.querySelectorAll('.log-check:checked').length;
+      const btn = document.getElementById('downloadBtn');
+      btn.innerText = `Download Selected (${count})`;
+      btn.disabled = count === 0;
+      btn.style.opacity = count === 0 ? '0.5' : '1';
+    }
+
+    function toggleAllLogs(checked) {
+      document.querySelectorAll('.log-check').forEach(cb => cb.checked = checked);
+      updateDownloadBtnCount();
+    }
+
+    async function doDownload() {
+      const serverId = document.getElementById('downloadServerSelect').value;
+      const startDate = document.getElementById('downloadStartDate').value;
+      const endDate = document.getElementById('downloadEndDate').value;
+      const selectedFiles = Array.from(document.querySelectorAll('.log-check:checked')).map(cb => cb.value);
+      const btn = document.getElementById('downloadBtn');
+      const status = document.getElementById('downloadStatus');
+      
+      if (selectedFiles.length === 0) return;
+      
+      btn.disabled = true;
+      btn.innerText = 'Filtering & Archiving...';
+      status.style.color = 'var(--text-dim)';
+      status.innerText = 'Filtering log content by date on remote server...';
+      
+      try {
+        const res = await fetch('/api/download-logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serverId, files: selectedFiles, startDate, endDate })
+        });
+        
+        if (res.ok) {
+          status.style.color = '#10b981';
+          status.innerText = 'Success! Download started.';
+          const blob = await res.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `logs_${serverId}_${startDate}_to_${endDate}.tar.gz`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        } else {
+          const data = await res.json();
+          status.style.color = '#ef4444';
+          status.innerText = data.error || 'Failed to generate archive.';
+        }
+      } catch (e) {
+        status.style.color = '#ef4444';
+        status.innerText = 'Error during download.';
+      } finally {
+        btn.disabled = false;
+        updateDownloadBtnCount();
+      }
+    }
+  </script>
+
+  <!-- ============================================================
+       PREMIUM ANIMATION ENGINE — Particles · Aurora · Magnetic
+       Cursor Glow · Ripple · Stagger · Tilt · Toast
+  ============================================================ -->
+  <script>
+  (function() {
+    'use strict';
+
+    /* ── 1. CURSOR GLOW FOLLOWER ── */
+    const glowEl = document.getElementById('cursor-glow');
+    let gx = window.innerWidth / 2, gy = window.innerHeight / 2;
+    let cx = gx, cy = gy;
+    function animGlow() {
+      cx += (gx - cx) * 0.085;
+      cy += (gy - cy) * 0.085;
+      if (glowEl) glowEl.style.transform = `translate(${cx}px, ${cy}px) translate(-50%,-50%)`;
+      requestAnimationFrame(animGlow);
+    }
+    animGlow();
+    window.addEventListener('mousemove', e => { gx = e.clientX; gy = e.clientY; });
+
+    /* ── 2. AURORA BACKGROUND ── */
+    const aCanvas = document.getElementById('aurora-canvas');
+    if (aCanvas) {
+      const actx = aCanvas.getContext('2d');
+      let aw, ah;
+      function resizeAurora() {
+        aw = aCanvas.width  = window.innerWidth;
+        ah = aCanvas.height = window.innerHeight;
+      }
+      resizeAurora();
+      window.addEventListener('resize', resizeAurora);
+
+      const blobs = [
+        { x: 0.2,  y: 0.3,  r: 0.38, hue: 200, speed: 0.00012, phase: 0 },
+        { x: 0.75, y: 0.2,  r: 0.32, hue: 270, speed: 0.00009, phase: 2 },
+        { x: 0.5,  y: 0.75, r: 0.42, hue: 190, speed: 0.00015, phase: 4 },
+        { x: 0.85, y: 0.65, r: 0.28, hue: 15,  speed: 0.00010, phase: 1 },
+      ];
+      let aT = 0;
+      function drawAurora(ts) {
+        aT = ts;
+        actx.clearRect(0, 0, aw, ah);
+        blobs.forEach(b => {
+          const ox = Math.sin(ts * b.speed + b.phase) * 0.12;
+          const oy = Math.cos(ts * b.speed * 0.7 + b.phase) * 0.10;
+          const px = (b.x + ox) * aw;
+          const py = (b.y + oy) * ah;
+          const pr = b.r * Math.min(aw, ah);
+          const g = actx.createRadialGradient(px, py, 0, px, py, pr);
+          g.addColorStop(0,   `hsla(${b.hue},90%,60%,0.13)`);
+          g.addColorStop(0.5, `hsla(${b.hue},80%,50%,0.05)`);
+          g.addColorStop(1,   'transparent');
+          actx.beginPath();
+          actx.ellipse(px, py, pr, pr * 0.7, ts * 0.0001, 0, Math.PI * 2);
+          actx.fillStyle = g;
+          actx.fill();
+        });
+        requestAnimationFrame(drawAurora);
+      }
+      requestAnimationFrame(drawAurora);
+    }
+
+    /* ── 3. PARTICLES (floating stars/dots) ── */
+    const pCanvas = document.getElementById('particles-canvas');
+    if (pCanvas) {
+      const pctx = pCanvas.getContext('2d');
+      let pw, ph;
+      function resizePart() {
+        pw = pCanvas.width  = window.innerWidth;
+        ph = pCanvas.height = window.innerHeight;
+      }
+      resizePart();
+      window.addEventListener('resize', resizePart);
+
+      const PART_COUNT = 80;
+      const parts = Array.from({ length: PART_COUNT }, () => ({
+        x: Math.random() * pw,
+        y: Math.random() * ph,
+        r: Math.random() * 1.1 + 0.2,
+        vx: (Math.random() - 0.5) * 0.18,
+        vy: (Math.random() - 0.5) * 0.18,
+        alpha: Math.random() * 0.5 + 0.1,
+        twinkle: Math.random() * Math.PI * 2,
+        twinkleSpeed: Math.random() * 0.025 + 0.008,
+        cyan: Math.random() > 0.65,
+      }));
+
+      function drawParticles() {
+        pctx.clearRect(0, 0, pw, ph);
+        parts.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          p.twinkle += p.twinkleSpeed;
+          if (p.x < -4) p.x = pw + 4;
+          if (p.x > pw + 4) p.x = -4;
+          if (p.y < -4) p.y = ph + 4;
+          if (p.y > ph + 4) p.y = -4;
+          const a = p.alpha * (0.5 + 0.5 * Math.sin(p.twinkle));
+          pctx.beginPath();
+          pctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          pctx.fillStyle = p.cyan
+            ? `rgba(0,217,255,${a})`
+            : `rgba(255,255,255,${a * 0.7})`;
+          pctx.fill();
+        });
+        requestAnimationFrame(drawParticles);
+      }
+      requestAnimationFrame(drawParticles);
+    }
+
+    /* ── 4. MAGNETIC BUTTON EFFECT ── */
+    function applyMagneticEffect(selector) {
+      document.querySelectorAll(selector).forEach(el => {
+        if (el._magnet) return;
+        el._magnet = true;
+        el.addEventListener('mousemove', function(e) {
+          const rect = this.getBoundingClientRect();
+          const mx = e.clientX - rect.left - rect.width  / 2;
+          const my = e.clientY - rect.top  - rect.height / 2;
+          const dist = Math.sqrt(mx * mx + my * my);
+          const pull = Math.min(1, 60 / Math.max(dist, 1));
+          this.style.transform = `translate(${mx * pull * 0.28}px, ${my * pull * 0.18}px)`;
+          this.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
+          this.style.setProperty('--my', ((e.clientY - rect.top)  / rect.height * 100) + '%');
+        });
+        el.addEventListener('mouseleave', function() {
+          this.style.transform = '';
+        });
+      });
+    }
+    function refreshMagnets() {
+      applyMagneticEffect('.btn-glass');
+      applyMagneticEffect('.btn-macro.primary');
+      applyMagneticEffect('.btn-macro.error');
+    }
+    refreshMagnets();
+    // re-apply after DOM changes
+    const magnetObserver = new MutationObserver(refreshMagnets);
+    magnetObserver.observe(document.body, { childList: true, subtree: true });
+
+    /* ── 5. RIPPLE ON CLICK ── */
+    document.addEventListener('click', function(e) {
+      const target = e.target.closest('.btn-primary,.btn-secondary,.btn-glass,.btn-macro,.btn-action');
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const r = document.createElement('span');
+      const size = Math.max(rect.width, rect.height) * 2;
+      r.className = 'ripple';
+      r.style.cssText = `
+        width: ${size}px; height: ${size}px;
+        left: ${e.clientX - rect.left - size/2}px;
+        top:  ${e.clientY - rect.top  - size/2}px;
+      `;
+      target.style.position = 'relative';
+      target.style.overflow = 'hidden';
+      target.appendChild(r);
+      setTimeout(() => r.remove(), 520);
+    });
+
+    /* ── 6. SERVER ITEM STAGGER ENTRANCE ── */
+    window.addStaggerToServerItems = function() {
+      const items = document.querySelectorAll('.server-item:not(._staggered)');
+      items.forEach((el, i) => {
+        el._staggered = true;
+        el.classList.add('stagger-item');
+        el.style.animationDelay = `${i * 40}ms`;
+        el.addEventListener('animationend', () => {
+          el.style.animationDelay = '';
+          el.classList.remove('stagger-item');
+        }, { once: true });
+      });
+    };
+
+    /* ── 7. 3D TILT ON METRIC CARDS ── */
+    function applyTilt(selector) {
+      document.querySelectorAll(selector).forEach(el => {
+        if (el._tilt) return;
+        el._tilt = true;
+        el.addEventListener('mousemove', function(e) {
+          const rect = this.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width  - 0.5;
+          const y = (e.clientY - rect.top)  / rect.height - 0.5;
+          this.style.transform = `translateY(-4px) rotateX(${-y * 8}deg) rotateY(${x * 8}deg) scale(1.01)`;
+          this.style.transition = 'transform 0.12s ease, box-shadow 0.3s';
+        });
+        el.addEventListener('mouseleave', function() {
+          this.style.transform = '';
+          this.style.transition = 'transform 0.45s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s';
+        });
+      });
+    }
+    function refreshTilt() { applyTilt('.metric-card'); }
+    refreshTilt();
+    const tiltObserver = new MutationObserver(refreshTilt);
+    tiltObserver.observe(document.body, { childList: true, subtree: true });
+
+    /* ── 8. TOAST SYSTEM (global) ── */
+    window.showToast = function(message, type = 'info', duration = 3500) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      const icons = { success: '✓', error: '✕', info: 'i' };
+      t.innerHTML = `<span class="toast-dot"></span><span>${message}</span>`;
+      container.appendChild(t);
+      const timer = setTimeout(() => {
+        t.classList.add('out');
+        setTimeout(() => t.remove(), 320);
+      }, duration);
+      t.addEventListener('click', () => {
+        clearTimeout(timer);
+        t.classList.add('out');
+        setTimeout(() => t.remove(), 320);
+      });
+    };
+
+    /* ── 9. ANIMATED COUNTER for metric numbers ── */
+    window.animateCounter = function(el, from, to, duration = 600, decimals = 0) {
+      const start = performance.now();
+      const diff = to - from;
+      function step(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        el.textContent = (from + diff * eased).toFixed(decimals);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    };
+
+    /* ── 10. SMOOTH SCROLL SIDEBAR ── */
+    const serverListEl = document.getElementById('serverList');
+    if (serverListEl) {
+      serverListEl.addEventListener('click', function(e) {
+        const item = e.target.closest('.server-item');
+        if (item && !item.classList.contains('disabled')) {
+          setTimeout(() => {
+            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 80);
+        }
+      });
+    }
+
+    /* ── 11. PAGE VISIBILITY - pause aurora when hidden ── */
+    document.addEventListener('visibilitychange', () => {
+      if (aCanvas) aCanvas.style.opacity = document.hidden ? '0' : '';
+      if (pCanvas) pCanvas.style.opacity = document.hidden ? '0' : '';
+    });
+
+    /* ── 12. Inject connect/disconnect toasts ── */
+    const _origAddEventListener = WebSocket.prototype.addEventListener;
+    // We hook into the connectToServer flow instead via MutationObserver on loading overlay
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+      const loadObs = new MutationObserver(() => {
+        if (!loadingOverlay.classList.contains('active')) {
+          // overlay hidden = just connected
+          const titleEl = document.getElementById('serverTitle');
+          if (titleEl && titleEl.textContent !== '--') {
+            showToast(`Connected to ${titleEl.textContent}`, 'success', 2500);
+          }
+        }
+      });
+      loadObs.observe(loadingOverlay, { attributes: true, attributeFilter: ['class'] });
+    }
+
+  })();
+  </script>
+</body>
+</html>

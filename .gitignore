@@ -1,0 +1,14 @@
+# Secrets vault — NEVER commit
+.env
+
+# Logs
+logs/
+*.log
+security_audit.log
+
+# Runtime data
+users.json
+
+# Node
+node_modules/
+npm-debug.log*

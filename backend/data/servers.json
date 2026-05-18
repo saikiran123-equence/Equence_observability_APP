@@ -1,0 +1,432 @@
+[
+  {
+    "id": "BLUTO-7",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R730",
+    "host": "172.16.90.200",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux 8",
+    "enabled": true
+  },
+  {
+    "id": "BLUTO-6",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R730",
+    "host": "172.16.90.201",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS",
+    "enabled": true
+  },
+  {
+    "id": "BLUTO-5",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R730",
+    "host": "172.16.90.202",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS",
+    "enabled": true
+  },
+  {
+    "id": "BLUTO-3",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R530",
+    "host": "172.16.90.204",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS",
+    "enabled": true
+  },
+  {
+    "id": "BLUTO-4",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R530",
+    "host": "172.16.90.205",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS",
+    "enabled": true
+  },
+  {
+    "id": "BLUTO-2",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R530",
+    "host": "172.16.90.207",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS",
+    "enabled": true
+  },
+  {
+    "id": "HP-Storage-NAS",
+    "group": "BLUTO",
+    "app": "HP StoreEasy 1650",
+    "host": "172.16.90.208",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Windows 2012",
+    "enabled": true
+  },
+  {
+    "id": "KVM",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R730",
+    "host": "172.16.90.30",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS",
+    "enabled": true
+  },
+  {
+    "id": "BLUTO-9",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R740",
+    "host": "172.16.90.209",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux 8",
+    "enabled": true
+  },
+  {
+    "id": "UAT-BLUTO-11",
+    "group": "BLUTO",
+    "app": "Dell PowerEdge R430",
+    "host": "172.16.90.211",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "BLUTO-12",
+    "group": "BLUTO",
+    "app": "Lenovo ThinkSystem SR550",
+    "host": "172.16.90.212",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "NAS-02",
+    "group": "BLUTO",
+    "app": "Lenovo ThinkSystem SR550",
+    "host": "172.16.90.213",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Windows 2019",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-220-KVM",
+    "group": "ERIS",
+    "app": "SR550 ThinkSystem",
+    "host": "172.16.90.220",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-222",
+    "group": "ERIS",
+    "app": "SR530 ThinkSystem",
+    "host": "172.16.90.222",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-224",
+    "group": "ERIS",
+    "app": "SR530 ThinkSystem",
+    "host": "172.16.90.224",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-225",
+    "group": "ERIS",
+    "app": "SR650 ThinkSystem",
+    "host": "172.16.90.225",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-226",
+    "group": "ERIS",
+    "app": "Dell PowerEdge R530",
+    "host": "172.16.90.226",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-229",
+    "group": "ERIS",
+    "app": "SR650 ThinkSystem",
+    "host": "172.16.90.229",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-230",
+    "group": "ERIS",
+    "app": "SR650 ThinkSystem",
+    "host": "172.16.90.230",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-233",
+    "group": "ERIS",
+    "app": "SR530 ThinkSystem",
+    "host": "172.16.90.233",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-234",
+    "group": "ERIS",
+    "app": "SR530 ThinkSystem",
+    "host": "172.16.90.234",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-228",
+    "group": "ERIS",
+    "app": "Dell PowerEdge R750XS",
+    "host": "172.16.90.228",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Ubuntu 24.04",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-227",
+    "group": "ERIS",
+    "app": "SR550 ThinkSystem",
+    "host": "172.16.90.227",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "CentOS 7.9",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-232",
+    "group": "ERIS",
+    "app": "SR550 ThinkSystem",
+    "host": "172.16.90.232",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Ubuntu 24.04",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-237",
+    "group": "ERIS",
+    "app": "Dell PowerEdge R550",
+    "host": "172.16.90.237",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-239",
+    "group": "ERIS",
+    "app": "Dell PowerEdge R550",
+    "host": "172.16.90.239",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-238",
+    "group": "ERIS",
+    "app": "Dell PowerEdge R750xs",
+    "host": "172.16.90.238",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Ubuntu 24.04",
+    "enabled": true
+  },
+  {
+    "id": "ERIS-235",
+    "group": "ERIS",
+    "app": "SR650 V2 ThinkSystem",
+    "host": "172.16.90.235",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Ubuntu 24.04",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-241",
+    "group": "VESTA",
+    "app": "Lenovo ThinkSystem SR650",
+    "host": "172.16.90.241",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-242",
+    "group": "VESTA",
+    "app": "Dell PowerEdge R750xs",
+    "host": "172.16.90.242",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-243",
+    "group": "VESTA",
+    "app": "Dell PowerEdge R750xs",
+    "host": "172.16.90.243",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-244",
+    "group": "VESTA",
+    "app": "SR650 V2 ThinkSystem",
+    "host": "172.16.90.244",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-245",
+    "group": "VESTA",
+    "app": "SR650 V2 ThinkSystem",
+    "host": "172.16.90.245",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-246",
+    "group": "VESTA",
+    "app": "Dell PowerEdge R760xs",
+    "host": "172.16.90.246",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-247",
+    "group": "VESTA",
+    "app": "Dell PowerEdge R760xs",
+    "host": "172.16.90.247",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-248",
+    "group": "VESTA",
+    "app": "Dell 2U Rack PowerEdge",
+    "host": "172.16.90.248",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "VESTA-249",
+    "group": "VESTA",
+    "app": "Dell 2U Rack PowerEdge",
+    "host": "172.16.90.249",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "METIS-111",
+    "group": "METIS",
+    "app": "Dell PowerEdge R730",
+    "host": "192.168.90.111",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "METIS-112",
+    "group": "METIS",
+    "app": "V3",
+    "host": "192.168.90.112",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "METIS-113",
+    "group": "METIS",
+    "app": "V3",
+    "host": "192.168.90.113",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "METIS-114",
+    "group": "METIS",
+    "app": "Lenovo SR650 V2",
+    "host": "192.168.90.114",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "METIS-115",
+    "group": "METIS",
+    "app": "Lenovo SR650 V2",
+    "host": "192.168.90.115",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux",
+    "enabled": true
+  },
+  {
+    "id": "METIS-116",
+    "group": "METIS",
+    "app": "Dell PowerEdge R740",
+    "host": "192.168.90.116",
+    "user": "maintenance",
+    "port": 22612,
+    "os": "Rocky Linux 8",
+    "enabled": true
+  }
+]
