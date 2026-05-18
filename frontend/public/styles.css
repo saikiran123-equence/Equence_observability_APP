@@ -1692,3 +1692,488 @@ i[data-lucide] { width:17px; height:17px; stroke-width:2.2; }
   color: var(--t4);
   font-variant-numeric: tabular-nums;
 }
+
+/* ================================================================
+   Stable monitoring UI refinements
+   Keeps the log/SSH workflow intact while removing decorative motion
+   and normalizing the interface to a restrained operations palette.
+   ================================================================ */
+:root {
+  --bg-base: #0b1220;
+  --bg-surface: #0f172a;
+  --bg-panel: #111827;
+  --bg-card: #182235;
+  --bg-input: #0f172a;
+  --bg-hover: rgba(148, 163, 184, 0.10);
+
+  --brand: #2563eb;
+  --brand-dim: rgba(37, 99, 235, 0.14);
+  --brand-glow: rgba(37, 99, 235, 0.18);
+  --cyan: #38bdf8;
+  --cyan-dim: rgba(56, 189, 248, 0.12);
+  --cyan-glow: rgba(56, 189, 248, 0.18);
+  --violet: #64748b;
+  --violet-dim: rgba(100, 116, 139, 0.12);
+  --green: #22c55e;
+  --green-dim: rgba(34, 197, 94, 0.12);
+  --red: #ef4444;
+  --amber: #f59e0b;
+
+  --t1: #f8fafc;
+  --t2: #dbe4f0;
+  --t3: #94a3b8;
+  --t4: #64748b;
+  --t5: #334155;
+
+  --b1: rgba(148, 163, 184, 0.18);
+  --b2: rgba(148, 163, 184, 0.10);
+  --b-cyan: rgba(56, 189, 248, 0.35);
+  --b-brand: rgba(37, 99, 235, 0.38);
+
+  --s1: 0 1px 2px rgba(0, 0, 0, 0.22);
+  --s2: 0 8px 24px rgba(2, 6, 23, 0.28);
+  --s3: 0 18px 44px rgba(2, 6, 23, 0.36);
+  --s4: 0 24px 64px rgba(2, 6, 23, 0.42);
+  --glass-blur: 0px;
+}
+
+body {
+  background: var(--bg-base);
+}
+body::before,
+body::after,
+#aurora-canvas,
+#particles-canvas,
+#cursor-glow,
+.sidebar::after,
+.topbar::after,
+.terminal-container-card::before {
+  display: none !important;
+}
+
+#app-container.visible {
+  animation: none;
+}
+
+.app-shell,
+.sidebar,
+.topbar,
+.terminal-container-card,
+.metric-card,
+.modal-content,
+.login-card,
+.explorer-extra,
+.explorer-toolbar,
+.explorer-search-strip,
+.log-actions-toolbar {
+  backdrop-filter: none !important;
+  box-shadow: var(--s2);
+}
+
+.sidebar {
+  width: 280px;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--b1);
+}
+.sidebar-header {
+  background: transparent;
+  border-bottom: 1px solid var(--b1);
+}
+.sb-icon,
+.server-icon-glow,
+.login-orb,
+.sidebar-footer-icon {
+  background: #1d4ed8;
+  box-shadow: none;
+}
+.sb-icon::before,
+.login-orb-bg {
+  display: none;
+}
+
+.nav-rail {
+  background: #08111f;
+  border-right: 1px solid var(--b1);
+}
+.nav-rail-btn,
+.btn-glass,
+.btn-secondary,
+.btn-macro,
+.time-preset,
+.viz-tab,
+.btn-save-view {
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.nav-rail-btn.active,
+.nav-rail-btn:hover,
+.btn-glass:hover,
+.btn-secondary:hover,
+.btn-macro.primary,
+.btn-macro.neutral:hover,
+.time-preset.active,
+.viz-tab.active {
+  background: var(--brand-dim);
+  border-color: var(--b-brand);
+  color: var(--t1);
+}
+
+.topbar {
+  background: rgba(15, 23, 42, 0.98);
+  border-bottom: 1px solid var(--b1);
+}
+
+.btn-primary,
+.btn-macro.primary,
+#downloadBtn,
+#downloadAuditBtn {
+  background: #2563eb !important;
+  box-shadow: none !important;
+}
+.btn-primary:hover,
+.btn-macro.primary:hover,
+#downloadBtn:hover,
+#downloadAuditBtn:hover {
+  background: #1d4ed8 !important;
+}
+.btn-macro.error {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.32);
+  color: #fca5a5;
+}
+
+.server-item {
+  background: transparent;
+  border-color: transparent;
+}
+.server-item:hover,
+.server-item.active {
+  background: rgba(37, 99, 235, 0.12);
+  border-color: var(--b-brand);
+  transform: none;
+}
+.server-item::before,
+.server-item::after,
+.metric-card::before,
+.btn-glass::before,
+.btn-macro::before,
+.login-card-border {
+  display: none !important;
+}
+
+.terminal-header {
+  background: #111827;
+  border-bottom: 1px solid var(--b1);
+}
+.terminal-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--t2);
+}
+.terminal-body {
+  background: #050a12;
+  background-image: none;
+}
+
+.metrics-ribbon {
+  background: var(--bg-panel);
+  border-left: 1px solid var(--b1);
+}
+.metric-card,
+.insight-card,
+.explorer-chart-panel,
+.log-table-wrap,
+.secondary-chart-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--b1);
+}
+.metric-card:hover,
+.insight-card:hover {
+  transform: none;
+}
+
+.explorer-extra-summary,
+.explorer-bc-title,
+.metric-label,
+.server-group.open .server-group-header,
+.explorer-bc-title i {
+  color: var(--t2);
+}
+.filter-chip,
+.seg-toggle button.active {
+  background: var(--brand-dim);
+  border-color: var(--b-brand);
+  color: #bfdbfe;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ================================================================
+   Terminal-first observability layout
+   Restores the live terminal/log stream as the primary workspace while
+   keeping the stable, simplified operations styling above.
+   ================================================================ */
+.app-shell {
+  gap: 0;
+}
+.nav-rail {
+  width: 48px;
+  padding: 10px 6px;
+}
+.nav-rail-btn {
+  width: 34px;
+  height: 34px;
+}
+.sidebar {
+  width: 256px;
+}
+.sidebar-header {
+  padding: 14px 14px 10px;
+}
+.sidebar-search {
+  padding: 8px 10px;
+}
+.server-list {
+  padding: 8px 8px 0;
+}
+.server-group-header {
+  padding: 6px 8px;
+}
+.server-item {
+  padding: 8px 9px;
+  margin-bottom: 4px;
+}
+.sidebar-footer {
+  padding: 10px;
+}
+
+.topbar {
+  height: 52px;
+  padding: 0 16px;
+}
+.topbar-left {
+  gap: 12px;
+}
+.current-server-info {
+  gap: 9px;
+}
+.server-icon-glow {
+  width: 28px;
+  height: 28px;
+}
+.btn-glass {
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.explorer-shell {
+  gap: 0;
+  overflow: hidden;
+}
+.dashboard-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 8px;
+  padding: 8px 10px 6px;
+}
+.explorer-shell > .dashboard-content {
+  min-height: clamp(560px, 72vh, 100%);
+}
+.terminal-container-card {
+  border-radius: 14px;
+  min-height: 0;
+}
+.log-actions-toolbar {
+  padding: 8px 10px;
+  gap: 6px;
+}
+.log-toolbar-row {
+  gap: 6px;
+}
+.filter-input {
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+.input-chip {
+  min-width: 180px;
+}
+.btn-macro {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.69rem;
+}
+.journal-box {
+  gap: 6px;
+}
+#journalServiceInput {
+  max-width: 170px;
+}
+.terminal-wrapper {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+.terminal-window {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+.terminal-header {
+  height: 34px;
+  padding: 0 12px;
+  gap: 10px;
+}
+.terminal-title,
+#metricsToggle {
+  font-size: 0.62rem;
+}
+.terminal-body {
+  min-height: 0;
+}
+#terminal .xterm-viewport,
+#terminal .xterm-screen {
+  font-size: 12px;
+}
+.empty-state {
+  padding: 22px;
+}
+.empty-state-icon {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 12px;
+  animation: none;
+}
+.empty-state h2 {
+  font-size: 0.98rem;
+  margin-bottom: 3px;
+}
+.empty-state p {
+  font-size: 0.76rem;
+}
+
+.metrics-ribbon {
+  width: 250px;
+  gap: 8px;
+}
+.metric-card {
+  padding: 10px;
+  border-radius: 12px;
+}
+.metric-label {
+  margin-bottom: 6px;
+  font-size: 0.64rem;
+}
+.metric-grid {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.explorer-extra {
+  max-height: 30vh;
+  overflow: hidden;
+  box-shadow: none;
+}
+.explorer-extra summary {
+  padding: 7px 12px;
+  font-size: 0.7rem;
+}
+.explorer-extra-inner {
+  max-height: calc(30vh - 34px);
+  padding-bottom: 6px;
+}
+.explorer-toolbar {
+  padding: 6px 10px 5px;
+  gap: 8px;
+}
+.explorer-breadcrumb {
+  gap: 7px;
+}
+.explorer-bc-title {
+  font-size: 0.76rem;
+}
+.explorer-bc-views select,
+.btn-save-view,
+.time-preset,
+.viz-tab,
+.seg-toggle button {
+  font-size: 0.63rem;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.explorer-search-strip {
+  gap: 5px;
+  padding: 6px 10px;
+}
+.explorer-search-row {
+  gap: 7px;
+}
+#explorerQuery {
+  padding: 6px 9px;
+  font-size: 0.72rem;
+}
+.filter-chips {
+  min-height: 18px;
+  gap: 4px;
+}
+.filter-chip {
+  padding: 3px 7px;
+  font-size: 0.64rem;
+}
+.explorer-viz-row {
+  padding: 0 10px 6px;
+  gap: 4px;
+}
+.explorer-chart-panel {
+  height: 78px;
+  padding: 2px 10px 6px;
+}
+.explorer-chart-panel canvas {
+  max-height: 70px;
+}
+.explorer-insights {
+  padding: 0 10px 6px;
+}
+.explorer-insights-head {
+  margin-bottom: 5px;
+}
+.explorer-insights-scroll {
+  gap: 6px;
+}
+.insight-card {
+  width: 170px;
+  padding: 8px;
+  border-radius: 10px;
+}
+.insight-card .mini-bar {
+  height: 22px;
+  margin-top: 5px;
+}
+.insight-card .title,
+.insight-card .foot {
+  font-size: 0.6rem;
+}
+.log-analytics-panel {
+  margin: 0 10px 8px;
+  max-height: 22vh;
+  border-radius: 12px;
+}
+.secondary-chart-wrap {
+  height: 120px;
+  padding: 8px 10px;
+}
+.log-table {
+  font-size: 0.66rem;
+}
+.log-table th {
+  padding: 6px 8px;
+}
+.log-table td {
+  padding: 4px 8px;
+}

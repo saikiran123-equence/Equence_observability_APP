@@ -97,6 +97,35 @@ const loginLimiter = rateLimit({
 
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
 
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+function isValidDateString(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+function parseDateRange(startDate, endDate) {
+  if (!isValidDateString(startDate) || !isValidDateString(endDate)) return null;
+  const start = new Date(`${startDate}T00:00:00.000Z`);
+  const end = new Date(`${endDate}T00:00:00.000Z`);
+  if (start > end) return null;
+  return { start, end };
+}
+
+function sanitizeArchiveName(name) {
+  const safe = String(name || 'log').replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '');
+  return safe || 'log';
+}
+
+function normalizeServerIds(serverIds) {
+  if (serverIds === undefined || serverIds === null) return null;
+  if (!Array.isArray(serverIds)) return [];
+  return serverIds.filter(id => typeof id === 'string' && /^[a-zA-Z0-9._-]+$/.test(id));
+}
+
 // -- SERVERS CACHE --
 let serversCache = [];
 const serversFilePath = path.join(dataDir, 'servers.json');
@@ -266,9 +295,15 @@ app.post('/api/users/:id/invite', authMiddleware, adminMiddleware, (req, res) =>
 // -- FLEET AUDIT ZIP EXPORT --
 app.post('/api/admin/audit-zip', authMiddleware, adminMiddleware, async (req, res) => {
   const { startDate, endDate, serverIds } = req.body;
-  if (!startDate || !endDate) return res.status(400).json({ error: 'Date range required (YYYY-MM-DD)' });
+  if (!parseDateRange(startDate, endDate)) {
+    return res.status(400).json({ error: 'Valid startDate and endDate required (YYYY-MM-DD)' });
+  }
 
-  const serversToAudit = serversCache.filter(s => s.enabled && (!serverIds || serverIds.includes(s.id)));
+  const requestedServerIds = normalizeServerIds(serverIds);
+  if (serverIds && requestedServerIds.length !== serverIds.length) {
+    return res.status(400).json({ error: 'serverIds must contain only valid server identifiers' });
+  }
+  const serversToAudit = serversCache.filter(s => s.enabled && (!requestedServerIds || requestedServerIds.includes(s.id)));
   
   const archive = archiver('zip', { zlib: { level: 9 } });
   res.setHeader('Content-Type', 'application/zip');
@@ -286,7 +321,9 @@ app.post('/api/admin/audit-zip', authMiddleware, adminMiddleware, async (req, re
       const conn = new Client();
       conn.on('ready', async () => {
         try {
-          const cmd = `sudo journalctl --since "${startDate}" --until "${endDate} 23:59:59" --output=short-iso --no-pager 2>/dev/null || sudo grep -aE "session opened|COMMAND=" /var/log/auth.log /var/log/secure 2>/dev/null`;
+          const sinceArg = shellQuote(startDate);
+          const untilArg = shellQuote(`${endDate} 23:59:59`);
+          const cmd = `sudo journalctl --since ${sinceArg} --until ${untilArg} --output=short-iso --no-pager 2>/dev/null || sudo grep -aE 'session opened|COMMAND=' /var/log/auth.log /var/log/secure 2>/dev/null`;
           const result = await sshExecFixed(conn, cmd);
           
           if (result.ok && result.stdout && result.stdout.trim().length > 10) {
@@ -364,9 +401,12 @@ app.get('/invite/:token', (req, res) => {
 });
 
 app.get('/api/list-logs-by-date', authMiddleware, async (req, res) => {
-  const { serverId, startDate, endDate, path = '/var/log' } = req.query;
+  const { serverId, startDate, endDate } = req.query;
+  const logPath = typeof req.query.path === 'string' && req.query.path.trim() ? req.query.path : '/var/log';
   if (!serverId || typeof serverId !== 'string') return res.status(400).json({ error: 'serverId required' });
-  if (!startDate || !endDate) return res.status(400).json({ error: 'startDate and endDate required' });
+  if (!parseDateRange(startDate, endDate)) {
+    return res.status(400).json({ error: 'Valid startDate and endDate required (YYYY-MM-DD)' });
+  }
   const serverConfig = serversCache.find(s => s.id === serverId);
   
   if (!serverConfig || !serverConfig.enabled) return res.status(404).json({ error: 'Server not found' });
@@ -378,7 +418,10 @@ app.get('/api/list-logs-by-date', authMiddleware, async (req, res) => {
   conn.on('ready', () => {
     // If path is a file, just return it. If directory, search by date range.
     // We use -newermt for date range search on the remote host
-    const findCmd = `if [ -f "${path}" ]; then echo "${path}"; else find "${path}" -maxdepth 2 -type f -newermt "${startDate}" ! -newermt "${endDate} 23:59:59" 2>/dev/null; fi`;
+    const quotedLogPath = shellQuote(logPath);
+    const quotedStartDate = shellQuote(startDate);
+    const quotedEndDate = shellQuote(`${endDate} 23:59:59`);
+    const findCmd = `if [ -f ${quotedLogPath} ]; then printf '%s\n' ${quotedLogPath}; else find ${quotedLogPath} -maxdepth 2 -type f -newermt ${quotedStartDate} ! -newermt ${quotedEndDate} 2>/dev/null; fi`;
     
     conn.exec(findCmd, (err, stream) => {
       if (err) { conn.end(); return res.status(500).json({ error: 'SSH failed' }); }
@@ -398,7 +441,13 @@ app.get('/api/list-logs-by-date', authMiddleware, async (req, res) => {
 
 app.post('/api/download-logs', authMiddleware, async (req, res) => {
   const { serverId, files, startDate, endDate } = req.body;
-  if (!files || !files.length) return res.status(400).json({ error: 'No files selected' });
+  if (!Array.isArray(files) || !files.length || files.some(f => typeof f !== 'string' || !f.trim())) {
+    return res.status(400).json({ error: 'No valid files selected' });
+  }
+  const parsedRange = parseDateRange(startDate, endDate);
+  if (!parsedRange) {
+    return res.status(400).json({ error: 'Valid startDate and endDate required (YYYY-MM-DD)' });
+  }
   
   const serverConfig = serversCache.find(s => s.id === serverId);
   if (!serverConfig || !serverConfig.enabled) return res.status(404).json({ error: 'Server not found' });
@@ -411,8 +460,8 @@ app.post('/api/download-logs', authMiddleware, async (req, res) => {
     // Generate patterns for filtering
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const patterns = [];
-    let curr = new Date(startDate);
-    const stop = new Date(endDate);
+    let curr = new Date(parsedRange.start);
+    const stop = parsedRange.end;
     while (curr <= stop) {
       const m = months[curr.getMonth()];
       const d = curr.getDate();
@@ -435,24 +484,28 @@ app.post('/api/download-logs', authMiddleware, async (req, res) => {
       curr.setDate(curr.getDate() + 1);
     }
     const grepPattern = patterns.join('|');
-    const tmpDir = `/tmp/infra_logs_${Date.now()}`;
+    const tmpDir = `/tmp/infra_logs_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const quotedTmpDir = shellQuote(tmpDir);
+    const quotedGrepPattern = shellQuote(grepPattern);
     
     // Command to: create tmp dir, filter each file into it, tar it, and cleanup
-    let filterCmd = `mkdir -p ${tmpDir}; `;
+    let filterCmd = `mkdir -p ${quotedTmpDir}; `;
     files.forEach(f => {
-      const base = f.split('/').pop();
-      // Use grep to only take lines matching the patterns. 
+      const base = sanitizeArchiveName(f.split('/').pop());
+      const quotedSource = shellQuote(f);
+      const quotedTarget = shellQuote(`${tmpDir}/${base}`);
+      // Use grep to only take lines matching the patterns.
       // Removed the fallback cp to prevent downloading the whole file if no matches are found.
-      filterCmd += `grep -aE "${grepPattern}" "${f}" > "${tmpDir}/${base}" 2>/dev/null || touch "${tmpDir}/${base}"; `;
+      filterCmd += `grep -aE ${quotedGrepPattern} ${quotedSource} > ${quotedTarget} 2>/dev/null || touch ${quotedTarget}; `;
     });
-    filterCmd += `tar -czf - -C ${tmpDir} . ; rm -rf ${tmpDir}`;
+    filterCmd += `tar -czf - -C ${quotedTmpDir} . ; rm -rf ${quotedTmpDir}`;
 
     res.setHeader('Content-Type', 'application/gzip');
     res.setHeader('Content-Disposition', `attachment; filename="filtered_logs_${serverId}.tar.gz"`);
     
     conn.exec(filterCmd, (err, stream) => {
       if (err) {
-        conn.exec(`rm -rf ${tmpDir}`); // Cleanup on exec error
+        conn.exec(`rm -rf ${quotedTmpDir}`); // Cleanup on exec error
         conn.end();
         return res.end();
       }
@@ -461,7 +514,7 @@ app.post('/api/download-logs', authMiddleware, async (req, res) => {
         conn.end();
       });
       stream.on('error', () => {
-        conn.exec(`rm -rf ${tmpDir}`);
+        conn.exec(`rm -rf ${quotedTmpDir}`);
         conn.end();
         res.end();
       });

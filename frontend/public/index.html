@@ -26,10 +26,6 @@
 </head>
 <body>
 
-  <!-- Premium Visual Layers -->
-  <canvas id="aurora-canvas"></canvas>
-  <canvas id="particles-canvas"></canvas>
-  <div id="cursor-glow"></div>
   <div id="toast-container"></div>
 
   <!-- Login Modal -->
@@ -43,8 +39,8 @@
             <i data-lucide="shield" width="24" height="24"></i>
           </div>
         </div>
-        <div class="login-title">Equence Infra</div>
-        <div class="login-sub">Infrastructure Security Portal</div>
+        <div class="login-title">Equence Monitor</div>
+        <div class="login-sub">Infrastructure Monitoring Console</div>
       </div>
       <div class="input-group">
         <label>Username</label>
@@ -242,7 +238,6 @@
     <div class="app-shell">
     <nav class="nav-rail" aria-label="Workspace">
       <button type="button" class="nav-rail-btn active" id="nrLogs" title="Log stream" onclick="setExplorerView('list')"><i data-lucide="file-text" width="18" height="18"></i></button>
-      <button type="button" class="nav-rail-btn" title="Servers" onclick="document.querySelector('.sidebar').scrollIntoView({behavior:'smooth'})"><i data-lucide="layers" width="18" height="18"></i></button>
       <button type="button" class="nav-rail-btn" id="nrTimeseries" title="Metrics &amp; series" onclick="setExplorerView('timeseries')"><i data-lucide="activity" width="18" height="18"></i></button>
       <div class="nav-rail-spacer"></div>
       <button type="button" class="nav-rail-btn" title="Download archives" onclick="openDownloadModal()"><i data-lucide="download-cloud" width="18" height="18"></i></button>
@@ -312,9 +307,6 @@
           <button class="btn-glass" onclick="openFind()" title="Find in terminal">
             <i data-lucide="search" width="16" height="16"></i><span class="btn-text">Find</span>
           </button>
-          <button class="btn-glass" onclick="toggleTheme()" id="themeBtn" title="Toggle theme">
-            <span id="themeIconWrap"><i data-lucide="sun" width="16" height="16"></i></span><span class="btn-text">Theme</span>
-          </button>
           <button class="btn-glass" onclick="logout()">
             <i data-lucide="log-out" width="16" height="16"></i><span class="btn-text">Logout</span>
           </button>
@@ -365,12 +357,7 @@
 
             <div class="terminal-window" id="terminalWindow" style="display: none; flex: 1; min-height: 0;">
               <div class="terminal-header">
-                <div class="traffic-lights">
-                  <span class="tl red"></span>
-                  <span class="tl yellow"></span>
-                  <span class="tl green"></span>
-                </div>
-                <span class="terminal-title">Terminal Output</span>
+                <span class="terminal-title"><i data-lucide="terminal" width="14" height="14"></i> Terminal Output</span>
                 <button id="metricsToggle" onclick="toggleMetrics()">
                   <i data-lucide="bar-chart-2" width="13" height="13"></i> Stats Panel
                 </button>
@@ -1791,64 +1778,28 @@
     document.getElementById('searchBtnPrev').addEventListener('click', () => executeSearch(true));
 
 
-    // --- THEME TOGGLE LOGIC ---
+    // --- STABLE OPERATIONS THEME ---
     function initTheme() {
-      const saved = localStorage.getItem('theme');
-      if (saved === 'light') {
-        document.body.classList.add('light-mode');
-        updateThemeUI(true);
-      } else {
-        updateThemeUI(false);
-      }
+      document.body.classList.remove('light-mode');
+      try { localStorage.setItem('theme', 'dark'); } catch (e) { /* ignore */ }
+      applyXtermTheme();
     }
 
-    function toggleTheme() {
-      try {
-        const isLight = document.body.classList.toggle('light-mode');
-        localStorage.setItem('theme', isLight ? 'light' : 'dark');
-        updateThemeUI(isLight);
-      } catch (err) { console.error(err); }
-    }
-
-    function applyXtermTheme(isLight) {
+    function applyXtermTheme() {
       if (!window.term) return;
-      if (isLight) {
-        window.term.options.theme = {
-          background: '#fcfcfc', foreground: '#2d2d2d', cursor: '#e95420',
-          selectionBackground: 'rgba(233, 84, 32, 0.2)',
-          black: '#2d2d2d', red: '#e95420', green: '#38a873',
-          yellow: '#f9a825', blue: '#409ad5', magenta: '#a34790',
-          cyan: '#00a5a5', white: '#f5f6f7',
-          brightBlack: '#6d6d6d', brightRed: '#e95420', brightGreen: '#38a873',
-          brightYellow: '#f9a825', brightBlue: '#409ad5', brightMagenta: '#a34790',
-          brightCyan: '#00a5a5', brightWhite: '#ffffff',
-        };
-      } else {
-        window.term.options.theme = {
-          background: '#030508', foreground: '#e2e8f0', cursor: '#00f5ff',
-          cursorAccent: '#030508', selectionBackground: 'rgba(0, 245, 255, 0.2)',
-          black: '#0d1117', red: '#ff4b4b', green: '#27c93f',
-          yellow: '#ffbd2e', blue: '#00f5ff', magenta: '#b794f4',
-          cyan: '#00e396', white: '#e2e8f0',
-          brightBlack: '#484f58', brightRed: '#ff6b6b', brightGreen: '#4ade80',
-          brightYellow: '#fde68a', brightBlue: '#7dd3fc', brightMagenta: '#c4b5fd',
-          brightCyan: '#67e8f9', brightWhite: '#fff',
-        };
-      }
+      window.term.options.theme = {
+        background: '#050a12', foreground: '#dbe4f0', cursor: '#38bdf8',
+        cursorAccent: '#050a12', selectionBackground: 'rgba(56, 189, 248, 0.22)',
+        black: '#0f172a', red: '#ef4444', green: '#22c55e',
+        yellow: '#f59e0b', blue: '#60a5fa', magenta: '#a78bfa',
+        cyan: '#38bdf8', white: '#dbe4f0',
+        brightBlack: '#64748b', brightRed: '#f87171', brightGreen: '#4ade80',
+        brightYellow: '#fbbf24', brightBlue: '#93c5fd', brightMagenta: '#c4b5fd',
+        brightCyan: '#7dd3fc', brightWhite: '#f8fafc',
+      };
       try {
         window.term.refresh(0, Math.max(0, window.term.rows - 1));
       } catch (e) { /* ignore */ }
-    }
-
-    function updateThemeUI(isLight) {
-      const wrap = document.getElementById('themeIconWrap');
-      if (isLight) {
-        wrap.innerHTML = '<i data-lucide="moon" width="16" height="16"></i>';
-      } else {
-        wrap.innerHTML = '<i data-lucide="sun" width="16" height="16"></i>';
-      }
-      applyXtermTheme(isLight);
-      if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons();
     }
 
     initTheme();
@@ -2013,272 +1964,5 @@
     }
   </script>
 
-  <!-- ============================================================
-       PREMIUM ANIMATION ENGINE — Particles · Aurora · Magnetic
-       Cursor Glow · Ripple · Stagger · Tilt · Toast
-  ============================================================ -->
-  <script>
-  (function() {
-    'use strict';
-
-    /* ── 1. CURSOR GLOW FOLLOWER ── */
-    const glowEl = document.getElementById('cursor-glow');
-    let gx = window.innerWidth / 2, gy = window.innerHeight / 2;
-    let cx = gx, cy = gy;
-    function animGlow() {
-      cx += (gx - cx) * 0.085;
-      cy += (gy - cy) * 0.085;
-      if (glowEl) glowEl.style.transform = `translate(${cx}px, ${cy}px) translate(-50%,-50%)`;
-      requestAnimationFrame(animGlow);
-    }
-    animGlow();
-    window.addEventListener('mousemove', e => { gx = e.clientX; gy = e.clientY; });
-
-    /* ── 2. AURORA BACKGROUND ── */
-    const aCanvas = document.getElementById('aurora-canvas');
-    if (aCanvas) {
-      const actx = aCanvas.getContext('2d');
-      let aw, ah;
-      function resizeAurora() {
-        aw = aCanvas.width  = window.innerWidth;
-        ah = aCanvas.height = window.innerHeight;
-      }
-      resizeAurora();
-      window.addEventListener('resize', resizeAurora);
-
-      const blobs = [
-        { x: 0.2,  y: 0.3,  r: 0.38, hue: 200, speed: 0.00012, phase: 0 },
-        { x: 0.75, y: 0.2,  r: 0.32, hue: 270, speed: 0.00009, phase: 2 },
-        { x: 0.5,  y: 0.75, r: 0.42, hue: 190, speed: 0.00015, phase: 4 },
-        { x: 0.85, y: 0.65, r: 0.28, hue: 15,  speed: 0.00010, phase: 1 },
-      ];
-      let aT = 0;
-      function drawAurora(ts) {
-        aT = ts;
-        actx.clearRect(0, 0, aw, ah);
-        blobs.forEach(b => {
-          const ox = Math.sin(ts * b.speed + b.phase) * 0.12;
-          const oy = Math.cos(ts * b.speed * 0.7 + b.phase) * 0.10;
-          const px = (b.x + ox) * aw;
-          const py = (b.y + oy) * ah;
-          const pr = b.r * Math.min(aw, ah);
-          const g = actx.createRadialGradient(px, py, 0, px, py, pr);
-          g.addColorStop(0,   `hsla(${b.hue},90%,60%,0.13)`);
-          g.addColorStop(0.5, `hsla(${b.hue},80%,50%,0.05)`);
-          g.addColorStop(1,   'transparent');
-          actx.beginPath();
-          actx.ellipse(px, py, pr, pr * 0.7, ts * 0.0001, 0, Math.PI * 2);
-          actx.fillStyle = g;
-          actx.fill();
-        });
-        requestAnimationFrame(drawAurora);
-      }
-      requestAnimationFrame(drawAurora);
-    }
-
-    /* ── 3. PARTICLES (floating stars/dots) ── */
-    const pCanvas = document.getElementById('particles-canvas');
-    if (pCanvas) {
-      const pctx = pCanvas.getContext('2d');
-      let pw, ph;
-      function resizePart() {
-        pw = pCanvas.width  = window.innerWidth;
-        ph = pCanvas.height = window.innerHeight;
-      }
-      resizePart();
-      window.addEventListener('resize', resizePart);
-
-      const PART_COUNT = 80;
-      const parts = Array.from({ length: PART_COUNT }, () => ({
-        x: Math.random() * pw,
-        y: Math.random() * ph,
-        r: Math.random() * 1.1 + 0.2,
-        vx: (Math.random() - 0.5) * 0.18,
-        vy: (Math.random() - 0.5) * 0.18,
-        alpha: Math.random() * 0.5 + 0.1,
-        twinkle: Math.random() * Math.PI * 2,
-        twinkleSpeed: Math.random() * 0.025 + 0.008,
-        cyan: Math.random() > 0.65,
-      }));
-
-      function drawParticles() {
-        pctx.clearRect(0, 0, pw, ph);
-        parts.forEach(p => {
-          p.x += p.vx; p.y += p.vy;
-          p.twinkle += p.twinkleSpeed;
-          if (p.x < -4) p.x = pw + 4;
-          if (p.x > pw + 4) p.x = -4;
-          if (p.y < -4) p.y = ph + 4;
-          if (p.y > ph + 4) p.y = -4;
-          const a = p.alpha * (0.5 + 0.5 * Math.sin(p.twinkle));
-          pctx.beginPath();
-          pctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          pctx.fillStyle = p.cyan
-            ? `rgba(0,217,255,${a})`
-            : `rgba(255,255,255,${a * 0.7})`;
-          pctx.fill();
-        });
-        requestAnimationFrame(drawParticles);
-      }
-      requestAnimationFrame(drawParticles);
-    }
-
-    /* ── 4. MAGNETIC BUTTON EFFECT ── */
-    function applyMagneticEffect(selector) {
-      document.querySelectorAll(selector).forEach(el => {
-        if (el._magnet) return;
-        el._magnet = true;
-        el.addEventListener('mousemove', function(e) {
-          const rect = this.getBoundingClientRect();
-          const mx = e.clientX - rect.left - rect.width  / 2;
-          const my = e.clientY - rect.top  - rect.height / 2;
-          const dist = Math.sqrt(mx * mx + my * my);
-          const pull = Math.min(1, 60 / Math.max(dist, 1));
-          this.style.transform = `translate(${mx * pull * 0.28}px, ${my * pull * 0.18}px)`;
-          this.style.setProperty('--mx', ((e.clientX - rect.left) / rect.width * 100) + '%');
-          this.style.setProperty('--my', ((e.clientY - rect.top)  / rect.height * 100) + '%');
-        });
-        el.addEventListener('mouseleave', function() {
-          this.style.transform = '';
-        });
-      });
-    }
-    function refreshMagnets() {
-      applyMagneticEffect('.btn-glass');
-      applyMagneticEffect('.btn-macro.primary');
-      applyMagneticEffect('.btn-macro.error');
-    }
-    refreshMagnets();
-    // re-apply after DOM changes
-    const magnetObserver = new MutationObserver(refreshMagnets);
-    magnetObserver.observe(document.body, { childList: true, subtree: true });
-
-    /* ── 5. RIPPLE ON CLICK ── */
-    document.addEventListener('click', function(e) {
-      const target = e.target.closest('.btn-primary,.btn-secondary,.btn-glass,.btn-macro,.btn-action');
-      if (!target) return;
-      const rect = target.getBoundingClientRect();
-      const r = document.createElement('span');
-      const size = Math.max(rect.width, rect.height) * 2;
-      r.className = 'ripple';
-      r.style.cssText = `
-        width: ${size}px; height: ${size}px;
-        left: ${e.clientX - rect.left - size/2}px;
-        top:  ${e.clientY - rect.top  - size/2}px;
-      `;
-      target.style.position = 'relative';
-      target.style.overflow = 'hidden';
-      target.appendChild(r);
-      setTimeout(() => r.remove(), 520);
-    });
-
-    /* ── 6. SERVER ITEM STAGGER ENTRANCE ── */
-    window.addStaggerToServerItems = function() {
-      const items = document.querySelectorAll('.server-item:not(._staggered)');
-      items.forEach((el, i) => {
-        el._staggered = true;
-        el.classList.add('stagger-item');
-        el.style.animationDelay = `${i * 40}ms`;
-        el.addEventListener('animationend', () => {
-          el.style.animationDelay = '';
-          el.classList.remove('stagger-item');
-        }, { once: true });
-      });
-    };
-
-    /* ── 7. 3D TILT ON METRIC CARDS ── */
-    function applyTilt(selector) {
-      document.querySelectorAll(selector).forEach(el => {
-        if (el._tilt) return;
-        el._tilt = true;
-        el.addEventListener('mousemove', function(e) {
-          const rect = this.getBoundingClientRect();
-          const x = (e.clientX - rect.left) / rect.width  - 0.5;
-          const y = (e.clientY - rect.top)  / rect.height - 0.5;
-          this.style.transform = `translateY(-4px) rotateX(${-y * 8}deg) rotateY(${x * 8}deg) scale(1.01)`;
-          this.style.transition = 'transform 0.12s ease, box-shadow 0.3s';
-        });
-        el.addEventListener('mouseleave', function() {
-          this.style.transform = '';
-          this.style.transition = 'transform 0.45s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.35s';
-        });
-      });
-    }
-    function refreshTilt() { applyTilt('.metric-card'); }
-    refreshTilt();
-    const tiltObserver = new MutationObserver(refreshTilt);
-    tiltObserver.observe(document.body, { childList: true, subtree: true });
-
-    /* ── 8. TOAST SYSTEM (global) ── */
-    window.showToast = function(message, type = 'info', duration = 3500) {
-      const container = document.getElementById('toast-container');
-      if (!container) return;
-      const t = document.createElement('div');
-      t.className = `toast ${type}`;
-      const icons = { success: '✓', error: '✕', info: 'i' };
-      t.innerHTML = `<span class="toast-dot"></span><span>${message}</span>`;
-      container.appendChild(t);
-      const timer = setTimeout(() => {
-        t.classList.add('out');
-        setTimeout(() => t.remove(), 320);
-      }, duration);
-      t.addEventListener('click', () => {
-        clearTimeout(timer);
-        t.classList.add('out');
-        setTimeout(() => t.remove(), 320);
-      });
-    };
-
-    /* ── 9. ANIMATED COUNTER for metric numbers ── */
-    window.animateCounter = function(el, from, to, duration = 600, decimals = 0) {
-      const start = performance.now();
-      const diff = to - from;
-      function step(now) {
-        const p = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = (from + diff * eased).toFixed(decimals);
-        if (p < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    };
-
-    /* ── 10. SMOOTH SCROLL SIDEBAR ── */
-    const serverListEl = document.getElementById('serverList');
-    if (serverListEl) {
-      serverListEl.addEventListener('click', function(e) {
-        const item = e.target.closest('.server-item');
-        if (item && !item.classList.contains('disabled')) {
-          setTimeout(() => {
-            item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          }, 80);
-        }
-      });
-    }
-
-    /* ── 11. PAGE VISIBILITY - pause aurora when hidden ── */
-    document.addEventListener('visibilitychange', () => {
-      if (aCanvas) aCanvas.style.opacity = document.hidden ? '0' : '';
-      if (pCanvas) pCanvas.style.opacity = document.hidden ? '0' : '';
-    });
-
-    /* ── 12. Inject connect/disconnect toasts ── */
-    const _origAddEventListener = WebSocket.prototype.addEventListener;
-    // We hook into the connectToServer flow instead via MutationObserver on loading overlay
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    if (loadingOverlay) {
-      const loadObs = new MutationObserver(() => {
-        if (!loadingOverlay.classList.contains('active')) {
-          // overlay hidden = just connected
-          const titleEl = document.getElementById('serverTitle');
-          if (titleEl && titleEl.textContent !== '--') {
-            showToast(`Connected to ${titleEl.textContent}`, 'success', 2500);
-          }
-        }
-      });
-      loadObs.observe(loadingOverlay, { attributes: true, attributeFilter: ['class'] });
-    }
-
-  })();
-  </script>
 </body>
 </html>
