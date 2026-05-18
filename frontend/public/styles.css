@@ -1914,3 +1914,266 @@ body::after,
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ================================================================
+   Terminal-first observability layout
+   Restores the live terminal/log stream as the primary workspace while
+   keeping the stable, simplified operations styling above.
+   ================================================================ */
+.app-shell {
+  gap: 0;
+}
+.nav-rail {
+  width: 48px;
+  padding: 10px 6px;
+}
+.nav-rail-btn {
+  width: 34px;
+  height: 34px;
+}
+.sidebar {
+  width: 256px;
+}
+.sidebar-header {
+  padding: 14px 14px 10px;
+}
+.sidebar-search {
+  padding: 8px 10px;
+}
+.server-list {
+  padding: 8px 8px 0;
+}
+.server-group-header {
+  padding: 6px 8px;
+}
+.server-item {
+  padding: 8px 9px;
+  margin-bottom: 4px;
+}
+.sidebar-footer {
+  padding: 10px;
+}
+
+.topbar {
+  height: 52px;
+  padding: 0 16px;
+}
+.topbar-left {
+  gap: 12px;
+}
+.current-server-info {
+  gap: 9px;
+}
+.server-icon-glow {
+  width: 28px;
+  height: 28px;
+}
+.btn-glass {
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.explorer-shell {
+  gap: 0;
+  overflow: hidden;
+}
+.dashboard-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 8px;
+  padding: 8px 10px 6px;
+}
+.explorer-shell > .dashboard-content {
+  min-height: clamp(560px, 72vh, 100%);
+}
+.terminal-container-card {
+  border-radius: 14px;
+  min-height: 0;
+}
+.log-actions-toolbar {
+  padding: 8px 10px;
+  gap: 6px;
+}
+.log-toolbar-row {
+  gap: 6px;
+}
+.filter-input {
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+.input-chip {
+  min-width: 180px;
+}
+.btn-macro {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.69rem;
+}
+.journal-box {
+  gap: 6px;
+}
+#journalServiceInput {
+  max-width: 170px;
+}
+.terminal-wrapper {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+.terminal-window {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+.terminal-header {
+  height: 34px;
+  padding: 0 12px;
+  gap: 10px;
+}
+.terminal-title,
+#metricsToggle {
+  font-size: 0.62rem;
+}
+.terminal-body {
+  min-height: 0;
+}
+#terminal .xterm-viewport,
+#terminal .xterm-screen {
+  font-size: 12px;
+}
+.empty-state {
+  padding: 22px;
+}
+.empty-state-icon {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 12px;
+  animation: none;
+}
+.empty-state h2 {
+  font-size: 0.98rem;
+  margin-bottom: 3px;
+}
+.empty-state p {
+  font-size: 0.76rem;
+}
+
+.metrics-ribbon {
+  width: 250px;
+  gap: 8px;
+}
+.metric-card {
+  padding: 10px;
+  border-radius: 12px;
+}
+.metric-label {
+  margin-bottom: 6px;
+  font-size: 0.64rem;
+}
+.metric-grid {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.explorer-extra {
+  max-height: 30vh;
+  overflow: hidden;
+  box-shadow: none;
+}
+.explorer-extra summary {
+  padding: 7px 12px;
+  font-size: 0.7rem;
+}
+.explorer-extra-inner {
+  max-height: calc(30vh - 34px);
+  padding-bottom: 6px;
+}
+.explorer-toolbar {
+  padding: 6px 10px 5px;
+  gap: 8px;
+}
+.explorer-breadcrumb {
+  gap: 7px;
+}
+.explorer-bc-title {
+  font-size: 0.76rem;
+}
+.explorer-bc-views select,
+.btn-save-view,
+.time-preset,
+.viz-tab,
+.seg-toggle button {
+  font-size: 0.63rem;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.explorer-search-strip {
+  gap: 5px;
+  padding: 6px 10px;
+}
+.explorer-search-row {
+  gap: 7px;
+}
+#explorerQuery {
+  padding: 6px 9px;
+  font-size: 0.72rem;
+}
+.filter-chips {
+  min-height: 18px;
+  gap: 4px;
+}
+.filter-chip {
+  padding: 3px 7px;
+  font-size: 0.64rem;
+}
+.explorer-viz-row {
+  padding: 0 10px 6px;
+  gap: 4px;
+}
+.explorer-chart-panel {
+  height: 78px;
+  padding: 2px 10px 6px;
+}
+.explorer-chart-panel canvas {
+  max-height: 70px;
+}
+.explorer-insights {
+  padding: 0 10px 6px;
+}
+.explorer-insights-head {
+  margin-bottom: 5px;
+}
+.explorer-insights-scroll {
+  gap: 6px;
+}
+.insight-card {
+  width: 170px;
+  padding: 8px;
+  border-radius: 10px;
+}
+.insight-card .mini-bar {
+  height: 22px;
+  margin-top: 5px;
+}
+.insight-card .title,
+.insight-card .foot {
+  font-size: 0.6rem;
+}
+.log-analytics-panel {
+  margin: 0 10px 8px;
+  max-height: 22vh;
+  border-radius: 12px;
+}
+.secondary-chart-wrap {
+  height: 120px;
+  padding: 8px 10px;
+}
+.log-table {
+  font-size: 0.66rem;
+}
+.log-table th {
+  padding: 6px 8px;
+}
+.log-table td {
+  padding: 4px 8px;
+}
